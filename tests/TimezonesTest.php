@@ -112,6 +112,30 @@ final class TimezonesTest extends TestCase
         self::assertNull($found);
     }
 
+    public function testTimezonesFindByIdentifierOrUtcReturnsMatchingTimezone(): void
+    {
+        /** @Given a Timezones collection with multiple identifiers */
+        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo');
+
+        /** @When searching for an existing identifier */
+        $found = $timezones->findByIdentifierOrUtc(iana: 'Asia/Tokyo');
+
+        /** @Then the matching Timezone should be returned */
+        self::assertSame('Asia/Tokyo', $found->value);
+    }
+
+    public function testTimezonesFindByIdentifierOrUtcReturnsUtcWhenNotFound(): void
+    {
+        /** @Given a Timezones collection without Europe/London */
+        $timezones = Timezones::fromStrings('America/Sao_Paulo', 'Asia/Tokyo');
+
+        /** @When searching for a non-existing identifier */
+        $found = $timezones->findByIdentifierOrUtc(iana: 'Europe/London');
+
+        /** @Then UTC should be returned as fallback */
+        self::assertSame('UTC', $found->value);
+    }
+
     public function testTimezonesCountMatchesAllSize(): void
     {
         /** @Given a Timezones collection with four items */
