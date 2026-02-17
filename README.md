@@ -189,6 +189,19 @@ $timezones->findByIdentifier(iana: 'Asia/Tokyo');    # Timezone("Asia/Tokyo")
 $timezones->findByIdentifier(iana: 'Europe/London'); # null
 ```
 
+#### Finding a timezone by identifier with UTC fallback
+
+Searches for a specific IANA identifier within the collection. Returns UTC if not found.
+
+```php
+use TinyBlocks\Time\Timezones;
+
+$timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo');
+
+$timezones->findByIdentifierOrUtc(iana: 'Asia/Tokyo');     # Timezone("Asia/Tokyo")
+$timezones->findByIdentifierOrUtc(iana: 'Europe/London');  # Timezone("UTC")
+``` 
+
 #### Checking if a timezone exists in the collection
 
 ```php

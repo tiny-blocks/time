@@ -100,6 +100,17 @@ final readonly class Timezones implements Countable
     }
 
     /**
+     * Finds a Timezone by its IANA identifier, falling back to UTC if not found.
+     *
+     * @param string $iana The IANA timezone identifier to search for (e.g. America/Sao_Paulo).
+     * @return Timezone The matching Timezone, or UTC if not found in this collection.
+     */
+    public function findByIdentifierOrUtc(string $iana): Timezone
+    {
+        return $this->findByIdentifier(iana: $iana) ?? Timezone::utc();
+    }
+
+    /**
      * Returns all timezone identifiers as plain strings.
      *
      * @return list<string> The list of IANA timezone identifier strings.
