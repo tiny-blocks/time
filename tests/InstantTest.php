@@ -272,6 +272,55 @@ final class InstantTest extends TestCase
         Instant::fromString(value: $value);
     }
 
+    #[DataProvider('validDatabaseStringsDataProvider')]
+    public function testInstantFromDatabaseString(
+        string $value,
+        string $expectedIso8601
+    ): void {
+        /** @Given a valid database date-time string in UTC */
+        /** @When creating an Instant from the string */
+        $instant = Instant::fromString(value: $value);
+
+        /** @Then the ISO 8601 representation should match the expected UTC value */
+        self::assertSame($expectedIso8601, $instant->toIso8601());
+    }
+
+    public function testInstantFromDatabaseStringPreservesMicroseconds(): void
+    {
+        /** @Given a database date-time string with microsecond precision */
+        $instant = Instant::fromString(value: '2026-02-17 08:27:21.106011');
+
+        /** @When accessing the underlying DateTimeImmutable */
+        $dateTime = $instant->toDateTimeImmutable();
+
+        /** @Then the microseconds should be preserved */
+        self::assertSame('106011', $dateTime->format('u'));
+    }
+
+    public function testInstantFromDatabaseStringWithoutMicrosecondsHasZeroMicroseconds(): void
+    {
+        /** @Given a database date-time string without microseconds */
+        $instant = Instant::fromString(value: '2026-02-17 08:27:21');
+
+        /** @When accessing the underlying DateTimeImmutable */
+        $dateTime = $instant->toDateTimeImmutable();
+
+        /** @Then the microseconds should be zero */
+        self::assertSame('000000', $dateTime->format('u'));
+    }
+
+    public function testInstantFromDatabaseStringIsInUtc(): void
+    {
+        /** @Given a database date-time string */
+        $instant = Instant::fromString(value: '2026-02-17 08:27:21.106011');
+
+        /** @When converting to DateTimeImmutable */
+        $dateTime = $instant->toDateTimeImmutable();
+
+        /** @Then the timezone should be UTC */
+        self::assertSame('UTC', $dateTime->getTimezone()->getName());
+    }
+
     public static function validStringsDataProvider(): array
     {
         return [
@@ -351,19 +400,56 @@ final class InstantTest extends TestCase
     public static function invalidStringsDataProvider(): array
     {
         return [
-            'Date only'                => ['value' => '2026-02-17'],
-            'Time only'                => ['value' => '10:30:00'],
-            'Plain text'               => ['value' => 'not-a-date'],
-            'Invalid day'              => ['value' => '2026-02-30T10:30:00+00:00'],
-            'Empty string'             => ['value' => ''],
-            'Invalid month'            => ['value' => '2026-13-17T10:30:00+00:00'],
-            'Missing offset'           => ['value' => '2026-02-17T10:30:00'],
-            'Truncated offset'         => ['value' => '2026-02-17T10:30:00+00'],
-            'Slash-separated date'     => ['value' => '2026/02/17T10:30:00+00:00'],
-            'Missing time separator'   => ['value' => '2026-02-17 10:30:00+00:00'],
-            'Z suffix instead offset'  => ['value' => '2026-02-17T10:30:00Z'],
-            'With fractional seconds'  => ['value' => '2026-02-17T10:30:00.123456+00:00'],
-            'Unix timestamp as string' => ['value' => '1771324200']
+            'Date only'                          => ['value' => '2026-02-17'],
+            'Time only'                          => ['value' => '10:30:00'],
+            'Plain text'                         => ['value' => 'not-a-date'],
+            'Invalid day'                        => ['value' => '2026-02-30T10:30:00+00:00'],
+            'Empty string'                       => ['value' => ''],
+            'Invalid month'                      => ['value' => '2026-13-17T10:30:00+00:00'],
+            'Missing offset'                     => ['value' => '2026-02-17T10:30:00'],
+            'Truncated offset'                   => ['value' => '2026-02-17T10:30:00+00'],
+            'Slash-separated date'               => ['value' => '2026/02/17T10:30:00+00:00'],
+            'Missing time separator'             => ['value' => '2026-02-17 10:30:00+00:00'],
+            'Z suffix instead offset'            => ['value' => '2026-02-17T10:30:00Z'],
+            'With fractional seconds'            => ['value' => '2026-02-17T10:30:00.123456+00:00'],
+            'Unix timestamp as string'           => ['value' => '1771324200'],
+            'Database format with invalid day'   => ['value' => '2026-02-30 08:27:21.106011'],
+            'Database format with T separator'   => ['value' => '2026-02-17T08:27:21.106011'],
+            'Database format with invalid month' => ['value' => '2026-13-17 08:27:21.106011']
+        ];
+    }
+
+    public static function validDatabaseStringsDataProvider(): array
+    {
+        return [
+            'End of day'                    => [
+                'value'           => '2026-12-31 23:59:59.999999',
+                'expectedIso8601' => '2026-12-31T23:59:59+00:00'
+            ],
+            'Full microseconds'             => [
+                'value'           => '2026-02-17 08:27:21.106011',
+                'expectedIso8601' => '2026-02-17T08:27:21+00:00'
+            ],
+            'Midnight with zeros'           => [
+                'value'           => '2026-01-01 00:00:00.000000',
+                'expectedIso8601' => '2026-01-01T00:00:00+00:00'
+            ],
+            'Without microseconds'          => [
+                'value'           => '2026-02-17 08:27:21',
+                'expectedIso8601' => '2026-02-17T08:27:21+00:00'
+            ],
+            'Three digit fraction'          => [
+                'value'           => '2026-02-17 08:27:21.106',
+                'expectedIso8601' => '2026-02-17T08:27:21+00:00'
+            ],
+            'Single digit fraction'         => [
+                'value'           => '2026-02-17 08:27:21.1',
+                'expectedIso8601' => '2026-02-17T08:27:21+00:00'
+            ],
+            'Midnight without microseconds' => [
+                'value'           => '2026-01-01 00:00:00',
+                'expectedIso8601' => '2026-01-01T00:00:00+00:00'
+            ]
         ];
     }
 }

@@ -16,6 +16,7 @@
 ## Overview
 
 Value Object representing time in an immutable and strict way, focused on safe parsing, formatting and normalization.
+
 <div id='installation'></div>
 
 ## Installation
@@ -35,6 +36,20 @@ normalized to UTC internally.
 
 An `Instant` represents a single point on the timeline, always stored in UTC with microsecond precision.
 
+#### Creating from the current moment
+
+Captures the current moment with microsecond precision, normalized to UTC.
+
+```php
+use TinyBlocks\Time\Instant;
+
+$instant = Instant::now();
+
+$instant->toIso8601();           # 2026-02-17T10:30:00+00:00 (current UTC time)
+$instant->toUnixSeconds();       # 1771324200 (current Unix timestamp)
+$instant->toDateTimeImmutable(); # DateTimeImmutable (UTC, with microseconds)
+```
+
 #### Creating from a string
 
 Parses a date-time string with an explicit UTC offset. The value is normalized to UTC regardless of the original offset.
@@ -49,6 +64,30 @@ $instant->toUnixSeconds();       # 1771345800
 $instant->toDateTimeImmutable(); # DateTimeImmutable (UTC)
 ```
 
+#### Creating from a database timestamp
+
+Parses a database date-time string as UTC, with or without microsecond precision (e.g. MySQL `DATETIME`
+or `DATETIME(6)`).
+
+```php
+use TinyBlocks\Time\Instant;
+
+$instant = Instant::fromString(value: '2026-02-17 08:27:21.106011');
+
+$instant->toIso8601();                                     # 2026-02-17T08:27:21+00:00
+$instant->toDateTimeImmutable()->format('Y-m-d H:i:s.u');  # 2026-02-17 08:27:21.106011
+```
+
+Also supports timestamps without fractional seconds:
+
+```php
+use TinyBlocks\Time\Instant;
+
+$instant = Instant::fromString(value: '2026-02-17 08:27:21');
+
+$instant->toIso8601(); # 2026-02-17T08:27:21+00:00
+```
+
 #### Creating from Unix seconds
 
 Creates an `Instant` from a Unix timestamp in seconds.
@@ -60,20 +99,6 @@ $instant = Instant::fromUnixSeconds(seconds: 0);
 
 $instant->toIso8601();     # 1970-01-01T00:00:00+00:00
 $instant->toUnixSeconds(); # 0
-```
-
-#### Creating from the current moment
-
-Captures the current moment with microsecond precision, normalized to UTC.
-
-```php
-use TinyBlocks\Time\Instant;
-
-$instant = Instant::now();
-
-$instant->toIso8601();           # 2026-02-17T10:30:00+00:00 (current UTC time)
-$instant->toUnixSeconds();       # 1771324200 (current Unix timestamp)
-$instant->toDateTimeImmutable(); # DateTimeImmutable (UTC, with microseconds)
 ```
 
 #### Formatting as ISO 8601
@@ -98,7 +123,7 @@ use TinyBlocks\Time\Instant;
 $instant = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
 $dateTime = $instant->toDateTimeImmutable();
 
-$dateTime->getTimezone()->getName(); # UTC
+$dateTime->getTimezone()->getName();  # UTC
 $dateTime->format('Y-m-d\TH:i:s.u'); # 2026-02-17T10:30:00.000000
 ```
 
@@ -198,9 +223,9 @@ use TinyBlocks\Time\Timezones;
 
 $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo');
 
-$timezones->findByIdentifierOrUtc(iana: 'Asia/Tokyo');     # Timezone("Asia/Tokyo")
-$timezones->findByIdentifierOrUtc(iana: 'Europe/London');  # Timezone("UTC")
-``` 
+$timezones->findByIdentifierOrUtc(iana: 'Asia/Tokyo');    # Timezone("Asia/Tokyo")
+$timezones->findByIdentifierOrUtc(iana: 'Europe/London'); # Timezone("UTC")
+```
 
 #### Checking if a timezone exists in the collection
 
@@ -211,6 +236,18 @@ $timezones = Timezones::fromStrings('America/Sao_Paulo', 'Asia/Tokyo');
 
 $timezones->contains(iana: 'Asia/Tokyo');       # true
 $timezones->contains(iana: 'America/New_York'); # false
+```
+
+#### Getting all identifiers as strings
+
+Returns all timezone identifiers as plain strings:
+
+```php
+use TinyBlocks\Time\Timezones;
+
+$timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Europe/London');
+
+$timezones->toStrings(); # ["UTC", "America/Sao_Paulo", "Europe/London"]
 ```
 
 <div id='license'></div>
