@@ -6,6 +6,7 @@ namespace Test\TinyBlocks\Time;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use TinyBlocks\Time\Duration;
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Internal\Exceptions\InvalidInstant;
 
@@ -319,6 +320,371 @@ final class InstantTest extends TestCase
 
         /** @Then the timezone should be UTC */
         self::assertSame('UTC', $dateTime->getTimezone()->getName());
+    }
+
+    public function testPlusShiftsForwardByDuration(): void
+    {
+        /** @Given an Instant at a known time and a Duration of 30 minutes */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $duration = Duration::ofMinutes(minutes: 30);
+
+        /** @When adding the Duration */
+        $result = $instant->plus(duration: $duration);
+
+        /** @Then the result should be 30 minutes later */
+        self::assertSame('2026-02-17T10:30:00+00:00', $result->toIso8601());
+    }
+
+    public function testPlusWithZeroDurationReturnsSameTime(): void
+    {
+        /** @Given an Instant and a zero Duration */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @When adding zero Duration */
+        $result = $instant->plus(duration: Duration::zero());
+
+        /** @Then the result should be the same time */
+        self::assertSame('2026-02-17T10:00:00+00:00', $result->toIso8601());
+    }
+
+    public function testPlusCrossesDayBoundary(): void
+    {
+        /** @Given an Instant near the end of the day */
+        $instant = Instant::fromString(value: '2026-02-17T23:30:00+00:00');
+
+        /** @When adding 1 hour */
+        $result = $instant->plus(duration: Duration::ofHours(hours: 1));
+
+        /** @Then the result should cross into the next day */
+        self::assertSame('2026-02-18T00:30:00+00:00', $result->toIso8601());
+    }
+
+    public function testPlusPreservesUtcTimezone(): void
+    {
+        /** @Given an Instant in UTC */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @When adding a Duration */
+        $result = $instant->plus(duration: Duration::ofMinutes(minutes: 90));
+
+        /** @Then the result should remain in UTC */
+        self::assertSame('UTC', $result->toDateTimeImmutable()->getTimezone()->getName());
+    }
+
+    public function testPlusWithLargeDuration(): void
+    {
+        /** @Given an Instant at a known time */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @When adding 1 day */
+        $result = $instant->plus(duration: Duration::ofDays(days: 1));
+
+        /** @Then the result should be exactly one day later */
+        self::assertSame('2026-02-18T10:00:00+00:00', $result->toIso8601());
+    }
+
+    public function testMinusShiftsBackwardByDuration(): void
+    {
+        /** @Given an Instant at a known time and a Duration of 30 minutes */
+        $instant = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+        $duration = Duration::ofMinutes(minutes: 30);
+
+        /** @When subtracting the Duration */
+        $result = $instant->minus(duration: $duration);
+
+        /** @Then the result should be 30 minutes earlier */
+        self::assertSame('2026-02-17T10:00:00+00:00', $result->toIso8601());
+    }
+
+    public function testMinusWithZeroDurationReturnsSameTime(): void
+    {
+        /** @Given an Instant and a zero Duration */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @When subtracting zero Duration */
+        $result = $instant->minus(duration: Duration::zero());
+
+        /** @Then the result should be the same time */
+        self::assertSame('2026-02-17T10:00:00+00:00', $result->toIso8601());
+    }
+
+    public function testMinusCrossesDayBoundaryBackward(): void
+    {
+        /** @Given an Instant at the start of the day */
+        $instant = Instant::fromString(value: '2026-02-17T00:30:00+00:00');
+
+        /** @When subtracting 1 hour */
+        $result = $instant->minus(duration: Duration::ofHours(hours: 1));
+
+        /** @Then the result should cross into the previous day */
+        self::assertSame('2026-02-16T23:30:00+00:00', $result->toIso8601());
+    }
+
+    public function testMinusPreservesUtcTimezone(): void
+    {
+        /** @Given an Instant in UTC */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @When subtracting a Duration */
+        $result = $instant->minus(duration: Duration::ofMinutes(minutes: 90));
+
+        /** @Then the result should remain in UTC */
+        self::assertSame('UTC', $result->toDateTimeImmutable()->getTimezone()->getName());
+    }
+
+    public function testPlusAndMinusAreInverse(): void
+    {
+        /** @Given an Instant and a Duration */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $duration = Duration::ofMinutes(minutes: 45);
+
+        /** @When adding and then subtracting the same Duration */
+        $result = $instant->plus(duration: $duration)->minus(duration: $duration);
+
+        /** @Then the result should be the original time */
+        self::assertSame($instant->toIso8601(), $result->toIso8601());
+        self::assertSame($instant->toUnixSeconds(), $result->toUnixSeconds());
+    }
+
+    public function testPlusResultIsAfterOriginal(): void
+    {
+        /** @Given an Instant at a known time */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @When adding a positive Duration */
+        $later = $instant->plus(duration: Duration::ofMinutes(minutes: 30));
+
+        /** @Then the result should be after the original */
+        self::assertTrue($later->isAfter(other: $instant));
+        self::assertTrue($instant->isBefore(other: $later));
+    }
+
+    public function testMinusResultIsBeforeOriginal(): void
+    {
+        /** @Given an Instant at a known time */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @When subtracting a positive Duration */
+        $earlier = $instant->minus(duration: Duration::ofMinutes(minutes: 30));
+
+        /** @Then the result should be before the original */
+        self::assertTrue($earlier->isBefore(other: $instant));
+        self::assertTrue($instant->isAfter(other: $earlier));
+    }
+
+    public function testDurationUntilReturnsAbsoluteDistance(): void
+    {
+        /** @Given two instants 30 minutes apart */
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+
+        /** @Then the duration should be 1800 seconds regardless of direction */
+        self::assertSame(1800, $earlier->durationUntil(other: $later)->seconds);
+        self::assertSame(1800, $later->durationUntil(other: $earlier)->seconds);
+    }
+
+    public function testDurationUntilSameInstantIsZero(): void
+    {
+        /** @Given two instants at the same moment */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $same = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then the duration between them should be zero */
+        $duration = $instant->durationUntil(other: $same);
+        self::assertSame(0, $duration->seconds);
+        self::assertTrue($duration->isZero());
+    }
+
+    public function testDurationUntilIsSymmetric(): void
+    {
+        /** @Given two distinct instants */
+        $a = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $b = Instant::fromString(value: '2026-02-17T11:00:00+00:00');
+
+        /** @Then a->durationUntil(b) should equal b->durationUntil(a) */
+        self::assertSame(
+            $a->durationUntil(other: $b)->seconds,
+            $b->durationUntil(other: $a)->seconds
+        );
+    }
+
+    public function testDurationUntilAcrossDayBoundary(): void
+    {
+        /** @Given two instants crossing midnight */
+        $before = Instant::fromString(value: '2026-02-17T23:00:00+00:00');
+        $after = Instant::fromString(value: '2026-02-18T01:00:00+00:00');
+
+        /** @Then the duration should be 7200 seconds (2 hours) */
+        self::assertSame(7200, $before->durationUntil(other: $after)->seconds);
+    }
+
+    public function testDurationUntilConsistentWithPlusAndMinus(): void
+    {
+        /** @Given an Instant and a Duration of 90 minutes */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $duration = Duration::ofMinutes(minutes: 90);
+        $shifted = $instant->plus(duration: $duration);
+
+        /** @Then the durationUntil should equal the original Duration */
+        self::assertSame($duration->seconds, $instant->durationUntil(other: $shifted)->seconds);
+    }
+
+    public function testDurationUntilWithDifferentOrigins(): void
+    {
+        /** @Given an Instant from a string with offset and from Unix seconds */
+        $fromString = Instant::fromString(value: '2026-02-17T13:30:00-03:00');
+        $fromUnix = Instant::fromUnixSeconds(seconds: $fromString->toUnixSeconds());
+
+        /** @Then the duration between them should be zero */
+        self::assertTrue($fromString->durationUntil(other: $fromUnix)->isZero());
+    }
+
+    public function testIsBeforeReturnsTrueWhenEarlier(): void
+    {
+        /** @Given two Instants where the first is earlier */
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+
+        /** @Then the earlier instant should be before the later */
+        self::assertTrue($earlier->isBefore(other: $later));
+    }
+
+    public function testIsBeforeReturnsFalseWhenLater(): void
+    {
+        /** @Given two Instants where the first is later */
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then the later instant should not be before the earlier */
+        self::assertFalse($later->isBefore(other: $earlier));
+    }
+
+    public function testIsBeforeReturnsFalseWhenEqual(): void
+    {
+        /** @Given two Instants at the same moment */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $same = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then isBefore should return false for equal instants */
+        self::assertFalse($instant->isBefore(other: $same));
+    }
+
+    public function testIsAfterReturnsTrueWhenLater(): void
+    {
+        /** @Given two Instants where the first is later */
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then the later instant should be after the earlier */
+        self::assertTrue($later->isAfter(other: $earlier));
+    }
+
+    public function testIsAfterReturnsFalseWhenEarlier(): void
+    {
+        /** @Given two Instants where the first is earlier */
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+
+        /** @Then the earlier instant should not be after the later */
+        self::assertFalse($earlier->isAfter(other: $later));
+    }
+
+    public function testIsAfterReturnsFalseWhenEqual(): void
+    {
+        /** @Given two Instants at the same moment */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $same = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then isAfter should return false for equal instants */
+        self::assertFalse($instant->isAfter(other: $same));
+    }
+
+    public function testIsBeforeOrEqualReturnsTrueWhenEarlier(): void
+    {
+        /** @Given two Instants where the first is earlier */
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+
+        /** @Then the earlier instant should be before or equal to the later */
+        self::assertTrue($earlier->isBeforeOrEqual(other: $later));
+    }
+
+    public function testIsBeforeOrEqualReturnsTrueWhenEqual(): void
+    {
+        /** @Given two Instants at the same moment */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $same = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then isBeforeOrEqual should return true for equal instants */
+        self::assertTrue($instant->isBeforeOrEqual(other: $same));
+    }
+
+    public function testIsBeforeOrEqualReturnsFalseWhenLater(): void
+    {
+        /** @Given two Instants where the first is later */
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then the later instant should not be before or equal to the earlier */
+        self::assertFalse($later->isBeforeOrEqual(other: $earlier));
+    }
+
+    public function testIsAfterOrEqualReturnsTrueWhenLater(): void
+    {
+        /** @Given two Instants where the first is later */
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then the later instant should be after or equal to the earlier */
+        self::assertTrue($later->isAfterOrEqual(other: $earlier));
+    }
+
+    public function testIsAfterOrEqualReturnsTrueWhenEqual(): void
+    {
+        /** @Given two Instants at the same moment */
+        $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $same = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @Then isAfterOrEqual should return true for equal instants */
+        self::assertTrue($instant->isAfterOrEqual(other: $same));
+    }
+
+    public function testIsAfterOrEqualReturnsFalseWhenEarlier(): void
+    {
+        /** @Given two Instants where the first is earlier */
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+
+        /** @Then the earlier instant should not be after or equal to the later */
+        self::assertFalse($earlier->isAfterOrEqual(other: $later));
+    }
+
+    public function testIsBeforeAndIsAfterAreMutuallyExclusive(): void
+    {
+        /** @Given two distinct Instants */
+        $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+        $later = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+
+        /** @Then isBefore and isAfter should be mutually exclusive */
+        self::assertTrue($earlier->isBefore(other: $later));
+        self::assertFalse($earlier->isAfter(other: $later));
+        self::assertTrue($later->isAfter(other: $earlier));
+        self::assertFalse($later->isBefore(other: $earlier));
+    }
+
+    public function testComparisonWithDifferentOriginsProducesSameResult(): void
+    {
+        /** @Given an Instant from a string with offset */
+        $fromString = Instant::fromString(value: '2026-02-17T13:30:00-03:00');
+
+        /** @And an Instant from the equivalent Unix seconds */
+        $fromUnix = Instant::fromUnixSeconds(seconds: $fromString->toUnixSeconds());
+
+        /** @Then both should be equal by all comparison methods */
+        self::assertFalse($fromString->isBefore(other: $fromUnix));
+        self::assertFalse($fromString->isAfter(other: $fromUnix));
+        self::assertTrue($fromString->isBeforeOrEqual(other: $fromUnix));
+        self::assertTrue($fromString->isAfterOrEqual(other: $fromUnix));
     }
 
     public static function validStringsDataProvider(): array
