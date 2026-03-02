@@ -74,6 +74,90 @@ final readonly class Instant implements ValueObject
     }
 
     /**
+     * Returns a new Instant shifted forward by the given Duration.
+     *
+     * @param Duration $duration The amount of time to add.
+     * @return Instant A new Instant shifted forward in time.
+     */
+    public function plus(Duration $duration): Instant
+    {
+        $modified = $this->datetime->modify(sprintf('+%d seconds', $duration->seconds));
+
+        return new Instant(datetime: $modified);
+    }
+
+    /**
+     * Returns a new Instant shifted backward by the given Duration.
+     *
+     * @param Duration $duration The amount of time to subtract.
+     * @return Instant A new Instant shifted backward in time.
+     */
+    public function minus(Duration $duration): Instant
+    {
+        $modified = $this->datetime->modify(sprintf('-%d seconds', $duration->seconds));
+
+        return new Instant(datetime: $modified);
+    }
+
+    /**
+     * Returns the Duration between this instant and another.
+     * The result is always non-negative (absolute distance).
+     *
+     * @param Instant $other The instant to measure the distance to.
+     * @return Duration The absolute duration between the two instants.
+     */
+    public function durationUntil(Instant $other): Duration
+    {
+        $difference = abs($this->datetime->getTimestamp() - $other->datetime->getTimestamp());
+
+        return Duration::ofSeconds(seconds: $difference);
+    }
+
+    /**
+     * Returns true if this instant is strictly before the other.
+     *
+     * @param Instant $other The instant to compare against.
+     * @return bool True if this instant precedes the other.
+     */
+    public function isBefore(Instant $other): bool
+    {
+        return $this->datetime < $other->datetime;
+    }
+
+    /**
+     * Returns true if this instant is strictly after the other.
+     *
+     * @param Instant $other The instant to compare against.
+     * @return bool True if this instant follows the other.
+     */
+    public function isAfter(Instant $other): bool
+    {
+        return $this->datetime > $other->datetime;
+    }
+
+    /**
+     * Returns true if this instant is before or at the same moment as the other.
+     *
+     * @param Instant $other The instant to compare against.
+     * @return bool True if this instant is at or before the other.
+     */
+    public function isBeforeOrEqual(Instant $other): bool
+    {
+        return $this->datetime <= $other->datetime;
+    }
+
+    /**
+     * Returns true if this instant is after or at the same moment as the other.
+     *
+     * @param Instant $other The instant to compare against.
+     * @return bool True if this instant is at or after the other.
+     */
+    public function isAfterOrEqual(Instant $other): bool
+    {
+        return $this->datetime >= $other->datetime;
+    }
+
+    /**
      * Formats this instant as an ISO 8601 string in UTC (e.g. 2026-02-17T10:30:00+00:00).
      *
      * @return string The ISO 8601 representation without fractional seconds.
