@@ -28,7 +28,7 @@ final readonly class Period implements ValueObject
      * @return Period The created period.
      * @throws InvalidPeriod If the start is not before the end.
      */
-    public static function of(Instant $from, Instant $to): Period
+    public static function from(Instant $from, Instant $to): Period
     {
         if ($from->isAfterOrEqual(other: $to)) {
             throw InvalidPeriod::becauseStartIsNotBeforeEnd(from: $from, to: $to);

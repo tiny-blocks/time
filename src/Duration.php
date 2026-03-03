@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace TinyBlocks\Time;
 
-use TinyBlocks\Time\Internal\Exceptions\InvalidDuration;
+use TinyBlocks\Time\Internal\Exceptions\InvalidSeconds;
+use TinyBlocks\Time\Internal\Seconds;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
 
@@ -20,7 +21,7 @@ final readonly class Duration implements ValueObject
     private const int SECONDS_PER_HOUR = 3600;
     private const int SECONDS_PER_DAY = 86400;
 
-    private function __construct(public int $seconds)
+    private function __construct(private Seconds $seconds)
     {
     }
 
@@ -31,7 +32,7 @@ final readonly class Duration implements ValueObject
      */
     public static function zero(): Duration
     {
-        return new Duration(seconds: 0);
+        return new Duration(seconds: Seconds::zero());
     }
 
     /**
@@ -39,15 +40,11 @@ final readonly class Duration implements ValueObject
      *
      * @param int $seconds The number of seconds (must be non-negative).
      * @return Duration The created Duration.
-     * @throws InvalidDuration If the value is negative.
+     * @throws InvalidSeconds If the value is negative.
      */
-    public static function ofSeconds(int $seconds): Duration
+    public static function fromSeconds(int $seconds): Duration
     {
-        if ($seconds < 0) {
-            throw InvalidDuration::becauseIsNegative(value: $seconds, unit: 'seconds');
-        }
-
-        return new Duration(seconds: $seconds);
+        return new Duration(seconds: Seconds::from(value: $seconds));
     }
 
     /**
@@ -55,15 +52,11 @@ final readonly class Duration implements ValueObject
      *
      * @param int $minutes The number of minutes (must be non-negative).
      * @return Duration The created Duration.
-     * @throws InvalidDuration If the value is negative.
+     * @throws InvalidSeconds If the value is negative.
      */
-    public static function ofMinutes(int $minutes): Duration
+    public static function fromMinutes(int $minutes): Duration
     {
-        if ($minutes < 0) {
-            throw InvalidDuration::becauseIsNegative(value: $minutes, unit: 'minutes');
-        }
-
-        return new Duration(seconds: $minutes * self::SECONDS_PER_MINUTE);
+        return new Duration(seconds: Seconds::from(value: $minutes * self::SECONDS_PER_MINUTE));
     }
 
     /**
@@ -71,15 +64,11 @@ final readonly class Duration implements ValueObject
      *
      * @param int $hours The number of hours (must be non-negative).
      * @return Duration The created Duration.
-     * @throws InvalidDuration If the value is negative.
+     * @throws InvalidSeconds If the value is negative.
      */
-    public static function ofHours(int $hours): Duration
+    public static function fromHours(int $hours): Duration
     {
-        if ($hours < 0) {
-            throw InvalidDuration::becauseIsNegative(value: $hours, unit: 'hours');
-        }
-
-        return new Duration(seconds: $hours * self::SECONDS_PER_HOUR);
+        return new Duration(seconds: Seconds::from(value: $hours * self::SECONDS_PER_HOUR));
     }
 
     /**
@@ -87,15 +76,11 @@ final readonly class Duration implements ValueObject
      *
      * @param int $days The number of days (must be non-negative).
      * @return Duration The created Duration.
-     * @throws InvalidDuration If the value is negative.
+     * @throws InvalidSeconds If the value is negative.
      */
-    public static function ofDays(int $days): Duration
+    public static function fromDays(int $days): Duration
     {
-        if ($days < 0) {
-            throw InvalidDuration::becauseIsNegative(value: $days, unit: 'days');
-        }
-
-        return new Duration(seconds: $days * self::SECONDS_PER_DAY);
+        return new Duration(seconds: Seconds::from(value: $days * self::SECONDS_PER_DAY));
     }
 
     /**
@@ -106,7 +91,7 @@ final readonly class Duration implements ValueObject
      */
     public function plus(Duration $other): Duration
     {
-        return new Duration(seconds: $this->seconds + $other->seconds);
+        return new Duration(seconds: $this->seconds->plus(other: $other->seconds));
     }
 
     /**
@@ -114,17 +99,24 @@ final readonly class Duration implements ValueObject
      *
      * @param Duration $other The Duration to subtract.
      * @return Duration A new Duration representing the difference.
-     * @throws InvalidDuration If the result was negative.
+     * @throws InvalidSeconds If the result was negative.
      */
     public function minus(Duration $other): Duration
     {
-        $result = $this->seconds - $other->seconds;
+        return new Duration(seconds: $this->seconds->minus(other: $other->seconds));
+    }
 
-        if ($result < 0) {
-            throw InvalidDuration::becauseResultIsNegative(current: $this->seconds, subtracted: $other->seconds);
-        }
-
-        return new Duration(seconds: $result);
+    /**
+     * Returns the number of times the other Duration fits wholly into this one.
+     * The result is truncated toward zero.
+     *
+     * @param Duration $other The divisor Duration.
+     * @return int The number of whole times the other fits into this Duration.
+     * @throws InvalidSeconds If the divisor is zero.
+     */
+    public function divide(Duration $other): int
+    {
+        return $this->seconds->divide(other: $other->seconds);
     }
 
     /**
@@ -134,7 +126,7 @@ final readonly class Duration implements ValueObject
      */
     public function isZero(): bool
     {
-        return $this->seconds === 0;
+        return $this->seconds->isZero();
     }
 
     /**
@@ -145,7 +137,7 @@ final readonly class Duration implements ValueObject
      */
     public function isGreaterThan(Duration $other): bool
     {
-        return $this->seconds > $other->seconds;
+        return $this->seconds->isGreaterThan(other: $other->seconds);
     }
 
     /**
@@ -156,7 +148,17 @@ final readonly class Duration implements ValueObject
      */
     public function isLessThan(Duration $other): bool
     {
-        return $this->seconds < $other->seconds;
+        return $this->seconds->isLessThan(other: $other->seconds);
+    }
+
+    /**
+     * Returns the total number of seconds in this Duration.
+     *
+     * @return int The number of seconds.
+     */
+    public function toSeconds(): int
+    {
+        return $this->seconds->value;
     }
 
     /**
@@ -166,7 +168,7 @@ final readonly class Duration implements ValueObject
      */
     public function toMinutes(): int
     {
-        return intdiv($this->seconds, self::SECONDS_PER_MINUTE);
+        return $this->seconds->divideByScalar(divisor: self::SECONDS_PER_MINUTE);
     }
 
     /**
@@ -176,7 +178,7 @@ final readonly class Duration implements ValueObject
      */
     public function toHours(): int
     {
-        return intdiv($this->seconds, self::SECONDS_PER_HOUR);
+        return $this->seconds->divideByScalar(divisor: self::SECONDS_PER_HOUR);
     }
 
     /**
@@ -186,6 +188,6 @@ final readonly class Duration implements ValueObject
      */
     public function toDays(): int
     {
-        return intdiv($this->seconds, self::SECONDS_PER_DAY);
+        return $this->seconds->divideByScalar(divisor: self::SECONDS_PER_DAY);
     }
 }

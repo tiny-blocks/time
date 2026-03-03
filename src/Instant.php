@@ -81,7 +81,7 @@ final readonly class Instant implements ValueObject
      */
     public function plus(Duration $duration): Instant
     {
-        $modified = $this->datetime->modify(sprintf('+%d seconds', $duration->seconds));
+        $modified = $this->datetime->modify(sprintf('+%d seconds', $duration->toSeconds()));
 
         return new Instant(datetime: $modified);
     }
@@ -94,7 +94,7 @@ final readonly class Instant implements ValueObject
      */
     public function minus(Duration $duration): Instant
     {
-        $modified = $this->datetime->modify(sprintf('-%d seconds', $duration->seconds));
+        $modified = $this->datetime->modify(sprintf('-%d seconds', $duration->toSeconds()));
 
         return new Instant(datetime: $modified);
     }
@@ -110,7 +110,7 @@ final readonly class Instant implements ValueObject
     {
         $difference = abs($this->datetime->getTimestamp() - $other->datetime->getTimestamp());
 
-        return Duration::ofSeconds(seconds: $difference);
+        return Duration::fromSeconds(seconds: $difference);
     }
 
     /**
