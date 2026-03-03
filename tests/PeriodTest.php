@@ -12,50 +12,56 @@ use TinyBlocks\Time\Period;
 
 final class PeriodTest extends TestCase
 {
-    public function testOfCreatesPeriodWithValidRange(): void
+    public function testPeriodFromCreatesPeriodWithValidRange(): void
     {
-        /** @Given two instants where from is before to */
+        /** @Given an Instant at the start of the range */
         $from = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @And an Instant at the end of the range */
         $to = Instant::fromString(value: '2026-02-17T11:00:00+00:00');
 
         /** @When creating a Period */
-        $period = Period::of(from: $from, to: $to);
+        $period = Period::from(from: $from, to: $to);
 
         /** @Then the period should expose the correct boundaries */
         self::assertSame('2026-02-17T10:00:00+00:00', $period->from->toIso8601());
         self::assertSame('2026-02-17T11:00:00+00:00', $period->to->toIso8601());
     }
 
-    public function testOfThrowsWhenStartEqualsEnd(): void
+    public function testPeriodFromWhenStartEqualsEnd(): void
     {
         /** @Given two instants at the same moment */
         $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
-        /** @Then an InvalidPeriod exception should be thrown */
+        /** @Then an exception indicating that start must be before end should be thrown */
         $this->expectException(InvalidPeriod::class);
 
         /** @When creating a Period with equal boundaries */
-        Period::of(from: $instant, to: $instant);
+        Period::from(from: $instant, to: $instant);
     }
 
-    public function testOfThrowsWhenStartIsAfterEnd(): void
+    public function testPeriodFromWhenStartIsAfterEnd(): void
     {
-        /** @Given two instants where from is after to */
+        /** @Given an Instant after the intended end */
         $from = Instant::fromString(value: '2026-02-17T11:00:00+00:00');
+
+        /** @And an Instant before the intended start */
         $to = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
-        /** @Then an InvalidPeriod exception should be thrown */
+        /** @Then an exception indicating that start must be before end should be thrown */
         $this->expectException(InvalidPeriod::class);
 
         /** @When creating a Period with inverted boundaries */
-        Period::of(from: $from, to: $to);
+        Period::from(from: $from, to: $to);
     }
 
-    public function testStartingAtCreatesPeriodFromDuration(): void
+    public function testPeriodStartingAtCreatesPeriodFromDuration(): void
     {
-        /** @Given a start instant and a Duration of 30 minutes */
+        /** @Given a start Instant */
         $from = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
-        $duration = Duration::ofMinutes(minutes: 30);
+
+        /** @And a Duration of 30 minutes */
+        $duration = Duration::fromMinutes(minutes: 30);
 
         /** @When creating a Period from start and Duration */
         $period = Period::startingAt(from: $from, duration: $duration);
@@ -65,23 +71,25 @@ final class PeriodTest extends TestCase
         self::assertSame('2026-02-17T10:30:00+00:00', $period->to->toIso8601());
     }
 
-    public function testStartingAtThrowsWhenDurationIsZero(): void
+    public function testPeriodStartingAtWhenDurationIsZero(): void
     {
-        /** @Given a start instant and a zero Duration */
+        /** @Given a start Instant */
         $from = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
-        /** @Then an InvalidPeriod exception should be thrown */
+        /** @Then an exception indicating that duration must not be zero should be thrown */
         $this->expectException(InvalidPeriod::class);
 
         /** @When creating a Period with zero Duration */
         Period::startingAt(from: $from, duration: Duration::zero());
     }
 
-    public function testStartingAtCrossesDayBoundary(): void
+    public function testPeriodStartingAtCrossesDayBoundary(): void
     {
-        /** @Given a start near midnight and a Duration that crosses the day */
+        /** @Given a start near midnight */
         $from = Instant::fromString(value: '2026-02-17T23:00:00+00:00');
-        $duration = Duration::ofHours(hours: 2);
+
+        /** @And a Duration that crosses the day */
+        $duration = Duration::fromHours(hours: 2);
 
         /** @When creating a Period */
         $period = Period::startingAt(from: $from, duration: $duration);
@@ -90,10 +98,10 @@ final class PeriodTest extends TestCase
         self::assertSame('2026-02-18T01:00:00+00:00', $period->to->toIso8601());
     }
 
-    public function testDurationReturnsCorrectValue(): void
+    public function testPeriodDurationReturnsCorrectValue(): void
     {
         /** @Given a Period spanning 1 hour */
-        $period = Period::of(
+        $period = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
@@ -102,13 +110,15 @@ final class PeriodTest extends TestCase
         $duration = $period->duration();
 
         /** @Then the duration should be 3600 seconds */
-        self::assertSame(3600, $duration->seconds);
+        self::assertSame(3600, $duration->toSeconds());
     }
 
-    public function testDurationFromStartingAt(): void
+    public function testPeriodDurationFromStartingAt(): void
     {
-        /** @Given a Period created from start and Duration of 90 minutes */
-        $inputDuration = Duration::ofMinutes(minutes: 90);
+        /** @Given a Duration of 90 minutes */
+        $inputDuration = Duration::fromMinutes(minutes: 90);
+
+        /** @And a Period created from start and that Duration */
         $period = Period::startingAt(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             duration: $inputDuration
@@ -118,15 +128,15 @@ final class PeriodTest extends TestCase
         $duration = $period->duration();
 
         /** @Then the duration should match the input */
-        self::assertSame($inputDuration->seconds, $duration->seconds);
+        self::assertSame($inputDuration->toSeconds(), $duration->toSeconds());
     }
 
-    public function testDurationReturnsDurationObject(): void
+    public function testPeriodDurationReturnsDurationObject(): void
     {
         /** @Given a Period of 30 minutes */
         $period = Period::startingAt(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
-            duration: Duration::ofMinutes(minutes: 30)
+            duration: Duration::fromMinutes(minutes: 30)
         );
 
         /** @When getting the Duration */
@@ -136,10 +146,10 @@ final class PeriodTest extends TestCase
         self::assertSame(30, $duration->toMinutes());
     }
 
-    public function testContainsReturnsTrueForInstantAtStart(): void
+    public function testPeriodContainsReturnsTrueForInstantAtStart(): void
     {
         /** @Given a Period [10:00, 11:00) */
-        $period = Period::of(
+        $period = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
@@ -151,10 +161,10 @@ final class PeriodTest extends TestCase
         self::assertTrue($result);
     }
 
-    public function testContainsReturnsTrueForInstantInMiddle(): void
+    public function testPeriodContainsReturnsTrueForInstantInMiddle(): void
     {
         /** @Given a Period [10:00, 11:00) */
-        $period = Period::of(
+        $period = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
@@ -166,10 +176,10 @@ final class PeriodTest extends TestCase
         self::assertTrue($result);
     }
 
-    public function testContainsReturnsFalseForInstantAtEnd(): void
+    public function testPeriodContainsReturnsFalseForInstantAtEnd(): void
     {
         /** @Given a Period [10:00, 11:00) */
-        $period = Period::of(
+        $period = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
@@ -181,10 +191,10 @@ final class PeriodTest extends TestCase
         self::assertFalse($result);
     }
 
-    public function testContainsReturnsFalseForInstantBeforeStart(): void
+    public function testPeriodContainsReturnsFalseForInstantBeforeStart(): void
     {
         /** @Given a Period [10:00, 11:00) */
-        $period = Period::of(
+        $period = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
@@ -196,10 +206,10 @@ final class PeriodTest extends TestCase
         self::assertFalse($result);
     }
 
-    public function testContainsReturnsFalseForInstantAfterEnd(): void
+    public function testPeriodContainsReturnsFalseForInstantAfterEnd(): void
     {
         /** @Given a Period [10:00, 11:00) */
-        $period = Period::of(
+        $period = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
@@ -211,14 +221,16 @@ final class PeriodTest extends TestCase
         self::assertFalse($result);
     }
 
-    public function testOverlapsWithReturnsTrueForPartialOverlap(): void
+    public function testPeriodOverlapsWithReturnsTrueForPartialOverlap(): void
     {
-        /** @Given two partially overlapping periods */
-        $periodA = Period::of(
+        /** @Given a Period [10:00, 11:00) */
+        $periodA = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
-        $periodB = Period::of(
+
+        /** @And a partially overlapping Period [10:30, 11:30) */
+        $periodB = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:30:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:30:00+00:00')
         );
@@ -228,14 +240,16 @@ final class PeriodTest extends TestCase
         self::assertTrue($periodB->overlapsWith(other: $periodA));
     }
 
-    public function testOverlapsWithReturnsTrueWhenOneContainsAnother(): void
+    public function testPeriodOverlapsWithReturnsTrueWhenOneContainsAnother(): void
     {
-        /** @Given a period that fully contains another */
-        $outer = Period::of(
+        /** @Given an outer Period [09:00, 12:00) */
+        $outer = Period::from(
             from: Instant::fromString(value: '2026-02-17T09:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T12:00:00+00:00')
         );
-        $inner = Period::of(
+
+        /** @And an inner Period [10:00, 11:00) fully contained */
+        $inner = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
@@ -245,14 +259,16 @@ final class PeriodTest extends TestCase
         self::assertTrue($inner->overlapsWith(other: $outer));
     }
 
-    public function testOverlapsWithReturnsFalseForAdjacentPeriods(): void
+    public function testPeriodOverlapsWithReturnsFalseForAdjacentPeriods(): void
     {
-        /** @Given two adjacent periods [10:00, 11:00) and [11:00, 12:00) */
-        $periodA = Period::of(
+        /** @Given a Period [10:00, 11:00) */
+        $periodA = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
-        $periodB = Period::of(
+
+        /** @And an adjacent Period [11:00, 12:00) */
+        $periodB = Period::from(
             from: Instant::fromString(value: '2026-02-17T11:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T12:00:00+00:00')
         );
@@ -262,14 +278,16 @@ final class PeriodTest extends TestCase
         self::assertFalse($periodB->overlapsWith(other: $periodA));
     }
 
-    public function testOverlapsWithReturnsFalseForDisjointPeriods(): void
+    public function testPeriodOverlapsWithReturnsFalseForDisjointPeriods(): void
     {
-        /** @Given two completely disjoint periods */
-        $periodA = Period::of(
+        /** @Given a Period [08:00, 09:00) */
+        $periodA = Period::from(
             from: Instant::fromString(value: '2026-02-17T08:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T09:00:00+00:00')
         );
-        $periodB = Period::of(
+
+        /** @And a completely disjoint Period [14:00, 15:00) */
+        $periodB = Period::from(
             from: Instant::fromString(value: '2026-02-17T14:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T15:00:00+00:00')
         );
@@ -279,14 +297,16 @@ final class PeriodTest extends TestCase
         self::assertFalse($periodB->overlapsWith(other: $periodA));
     }
 
-    public function testOverlapsWithReturnsTrueForIdenticalPeriods(): void
+    public function testPeriodOverlapsWithReturnsTrueForIdenticalPeriods(): void
     {
-        /** @Given two identical periods */
-        $periodA = Period::of(
+        /** @Given a Period [10:00, 11:00) */
+        $periodA = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
-        $periodB = Period::of(
+
+        /** @And an identical Period [10:00, 11:00) */
+        $periodB = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
@@ -295,14 +315,16 @@ final class PeriodTest extends TestCase
         self::assertTrue($periodA->overlapsWith(other: $periodB));
     }
 
-    public function testOverlapsWithIsSymmetric(): void
+    public function testPeriodOverlapsWithIsSymmetric(): void
     {
-        /** @Given two overlapping periods */
-        $periodA = Period::of(
+        /** @Given a Period [10:00, 11:00) */
+        $periodA = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
-        $periodB = Period::of(
+
+        /** @And an overlapping Period [10:30, 11:30) */
+        $periodB = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:30:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:30:00+00:00')
         );
@@ -314,47 +336,58 @@ final class PeriodTest extends TestCase
         );
     }
 
-    public function testDurationIsConsistentBetweenOfAndStartingAt(): void
+    public function testPeriodDurationIsConsistentBetweenFromAndStartingAt(): void
     {
-        /** @Given a Period from of() and one from startingAt() with the same boundaries */
+        /** @Given a start Instant */
         $from = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
+
+        /** @And an end Instant */
         $to = Instant::fromString(value: '2026-02-17T11:30:00+00:00');
 
-        $periodFromOf = Period::of(from: $from, to: $to);
-        $periodFromStartingAt = Period::startingAt(from: $from, duration: Duration::ofMinutes(minutes: 90));
+        /** @And a Period created via from() */
+        $periodFromFrom = Period::from(from: $from, to: $to);
+
+        /** @And a Period created via startingAt() with equivalent Duration */
+        $periodFromStartingAt = Period::startingAt(from: $from, duration: Duration::fromMinutes(minutes: 90));
 
         /** @Then both should have the same Duration */
         self::assertSame(
-            $periodFromOf->duration()->seconds,
-            $periodFromStartingAt->duration()->seconds
+            $periodFromFrom->duration()->toSeconds(),
+            $periodFromStartingAt->duration()->toSeconds()
         );
     }
 
-    public function testContainsIsConsistentWithOverlapsForSingleInstant(): void
+    public function testPeriodContainsIsConsistentWithOverlapsForSingleInstant(): void
     {
-        /** @Given a Period and a 1-second micro-period at a contained instant */
-        $period = Period::of(
+        /** @Given a Period [10:00, 11:00) */
+        $period = Period::from(
             from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
             to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
         );
+
+        /** @And a contained Instant at 10:30 */
         $contained = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
-        $microPeriod = Period::startingAt(from: $contained, duration: Duration::ofSeconds(seconds: 1));
+
+        /** @And a 1-second micro-period starting at that Instant */
+        $microPeriod = Period::startingAt(from: $contained, duration: Duration::fromSeconds(seconds: 1));
 
         /** @Then the period should contain the instant and overlap with the micro-period */
         self::assertTrue($period->contains(instant: $contained));
         self::assertTrue($period->overlapsWith(other: $microPeriod));
     }
 
-    public function testOverlapsWithNonOverlappingIsSymmetric(): void
+    public function testPeriodOverlapsWithNonOverlappingIsSymmetric(): void
     {
-        /** @Given two non-overlapping periods */
+        /** @Given a Period [08:00, 09:00) */
         $periodA = Period::startingAt(
             from: Instant::fromString(value: '2026-02-17T08:00:00+00:00'),
-            duration: Duration::ofHours(hours: 1)
+            duration: Duration::fromHours(hours: 1)
         );
+
+        /** @And a non-overlapping Period [14:00, 15:00) */
         $periodB = Period::startingAt(
             from: Instant::fromString(value: '2026-02-17T14:00:00+00:00'),
-            duration: Duration::ofHours(hours: 1)
+            duration: Duration::fromHours(hours: 1)
         );
 
         /** @Then symmetry should hold for non-overlapping case */

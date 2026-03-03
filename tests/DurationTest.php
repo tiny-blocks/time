@@ -6,154 +6,188 @@ namespace Test\TinyBlocks\Time;
 
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\Duration;
-use TinyBlocks\Time\Internal\Exceptions\InvalidDuration;
+use TinyBlocks\Time\Internal\Exceptions\InvalidSeconds;
 
 final class DurationTest extends TestCase
 {
-    public function testZeroCreatesZeroDuration(): void
+    public function testDurationZeroCreatesZeroDuration(): void
     {
         /** @Given a zero Duration */
         $duration = Duration::zero();
 
         /** @Then the seconds should be zero */
-        self::assertSame(0, $duration->seconds);
+        self::assertSame(0, $duration->toSeconds());
+
+        /** @And it should be identified as zero */
         self::assertTrue($duration->isZero());
     }
 
-    public function testOfSecondsCreatesCorrectDuration(): void
+    public function testDurationFromSecondsCreatesCorrectDuration(): void
     {
-        /** @Given a Duration of 1800 seconds */
-        $duration = Duration::ofSeconds(seconds: 1800);
+        /** @Given a Duration created from 1800 seconds */
+        $duration = Duration::fromSeconds(seconds: 1800);
 
         /** @Then it should hold 1800 seconds */
-        self::assertSame(1800, $duration->seconds);
+        self::assertSame(1800, $duration->toSeconds());
+
+        /** @And it should not be zero */
         self::assertFalse($duration->isZero());
     }
 
-    public function testOfSecondsWithZero(): void
+    public function testDurationFromSecondsWithZero(): void
     {
-        /** @Given a Duration of zero seconds */
-        $duration = Duration::ofSeconds(seconds: 0);
+        /** @Given a Duration created from zero seconds */
+        $duration = Duration::fromSeconds(seconds: 0);
 
-        /** @Then it should be zero */
-        self::assertSame(0, $duration->seconds);
+        /** @Then it should hold zero seconds */
+        self::assertSame(0, $duration->toSeconds());
+
+        /** @And it should be identified as zero */
         self::assertTrue($duration->isZero());
     }
 
-    public function testOfSecondsThrowsWhenNegative(): void
+    public function testDurationWhenNegativeSeconds(): void
     {
-        /** @Then an InvalidDuration exception should be thrown */
-        $this->expectException(InvalidDuration::class);
+        /** @Then an exception indicating that seconds must be non-negative should be thrown */
+        $this->expectException(InvalidSeconds::class);
 
         /** @When creating a Duration with negative seconds */
-        Duration::ofSeconds(seconds: -1);
+        Duration::fromSeconds(seconds: -1);
     }
 
-    public function testOfMinutesConvertsToSeconds(): void
+    public function testDurationFromMinutesConvertsToSeconds(): void
     {
-        /** @Given a Duration of 30 minutes */
-        $duration = Duration::ofMinutes(minutes: 30);
+        /** @Given a Duration created from 30 minutes */
+        $duration = Duration::fromMinutes(minutes: 30);
 
         /** @Then it should hold 1800 seconds */
-        self::assertSame(1800, $duration->seconds);
+        self::assertSame(1800, $duration->toSeconds());
     }
 
-    public function testOfMinutesWithZero(): void
+    public function testDurationFromMinutesWithZero(): void
     {
-        /** @Given a Duration of zero minutes */
-        $duration = Duration::ofMinutes(minutes: 0);
+        /** @Given a Duration created from zero minutes */
+        $duration = Duration::fromMinutes(minutes: 0);
 
         /** @Then it should be zero */
         self::assertTrue($duration->isZero());
     }
 
-    public function testOfMinutesThrowsWhenNegative(): void
+    public function testDurationWhenNegativeMinutes(): void
     {
-        /** @Then an InvalidDuration exception should be thrown */
-        $this->expectException(InvalidDuration::class);
+        /** @Then an exception indicating that seconds must be non-negative should be thrown */
+        $this->expectException(InvalidSeconds::class);
 
         /** @When creating a Duration with negative minutes */
-        Duration::ofMinutes(minutes: -5);
+        Duration::fromMinutes(minutes: -5);
     }
 
-    public function testOfHoursConvertsToSeconds(): void
+    public function testDurationFromHoursConvertsToSeconds(): void
     {
-        /** @Given a Duration of 2 hours */
-        $duration = Duration::ofHours(hours: 2);
+        /** @Given a Duration created from 2 hours */
+        $duration = Duration::fromHours(hours: 2);
 
         /** @Then it should hold 7200 seconds */
-        self::assertSame(7200, $duration->seconds);
+        self::assertSame(7200, $duration->toSeconds());
     }
 
-    public function testOfHoursThrowsWhenNegative(): void
+    public function testDurationFromHoursWithZero(): void
     {
-        /** @Then an InvalidDuration exception should be thrown */
-        $this->expectException(InvalidDuration::class);
+        /** @Given a Duration created from zero hours */
+        $duration = Duration::fromHours(hours: 0);
+
+        /** @Then it should hold zero seconds */
+        self::assertSame(0, $duration->toSeconds());
+
+        /** @And it should be identified as zero */
+        self::assertTrue($duration->isZero());
+    }
+
+    public function testDurationWhenNegativeHours(): void
+    {
+        /** @Then an exception indicating that seconds must be non-negative should be thrown */
+        $this->expectException(InvalidSeconds::class);
 
         /** @When creating a Duration with negative hours */
-        Duration::ofHours(hours: -1);
+        Duration::fromHours(hours: -1);
     }
 
-    public function testOfDaysConvertsToSeconds(): void
+    public function testDurationFromDaysConvertsToSeconds(): void
     {
-        /** @Given a Duration of 1 day */
-        $duration = Duration::ofDays(days: 1);
+        /** @Given a Duration created from 1 day */
+        $duration = Duration::fromDays(days: 1);
 
         /** @Then it should hold 86400 seconds */
-        self::assertSame(86400, $duration->seconds);
+        self::assertSame(86400, $duration->toSeconds());
     }
 
-    public function testOfDaysThrowsWhenNegative(): void
+    public function testDurationFromDaysWithZero(): void
     {
-        /** @Then an InvalidDuration exception should be thrown */
-        $this->expectException(InvalidDuration::class);
+        /** @Given a Duration created from zero days */
+        $duration = Duration::fromDays(days: 0);
+
+        /** @Then it should hold zero seconds */
+        self::assertSame(0, $duration->toSeconds());
+
+        /** @And it should be identified as zero */
+        self::assertTrue($duration->isZero());
+    }
+
+    public function testDurationWhenNegativeDays(): void
+    {
+        /** @Then an exception indicating that seconds must be non-negative should be thrown */
+        $this->expectException(InvalidSeconds::class);
 
         /** @When creating a Duration with negative days */
-        Duration::ofDays(days: -1);
+        Duration::fromDays(days: -1);
     }
 
-    public function testPlusAddsTwoDurations(): void
+    public function testDurationPlusAddsTwoDurations(): void
     {
-        /** @Given a Duration of 30 minutes and another of 15 minutes */
-        $thirtyMinutes = Duration::ofMinutes(minutes: 30);
-        $fifteenMinutes = Duration::ofMinutes(minutes: 15);
+        /** @Given a Duration of 30 minutes */
+        $thirtyMinutes = Duration::fromMinutes(minutes: 30);
+
+        /** @And a Duration of 15 minutes */
+        $fifteenMinutes = Duration::fromMinutes(minutes: 15);
 
         /** @When adding them */
         $result = $thirtyMinutes->plus(other: $fifteenMinutes);
 
-        /** @Then the result should be 45 minutes in seconds */
-        self::assertSame(2700, $result->seconds);
+        /** @Then the result should be 2700 seconds (45 minutes) */
+        self::assertSame(2700, $result->toSeconds());
     }
 
-    public function testPlusWithZeroReturnsSameValue(): void
+    public function testDurationPlusWithZeroReturnsSameValue(): void
     {
         /** @Given a Duration of 1 hour */
-        $oneHour = Duration::ofHours(hours: 1);
+        $oneHour = Duration::fromHours(hours: 1);
 
         /** @When adding zero */
         $result = $oneHour->plus(other: Duration::zero());
 
         /** @Then the result should be unchanged */
-        self::assertSame(3600, $result->seconds);
+        self::assertSame(3600, $result->toSeconds());
     }
 
-    public function testMinusSubtractsTwoDurations(): void
+    public function testDurationMinusSubtractsTwoDurations(): void
     {
-        /** @Given a Duration of 60 minutes and another of 15 minutes */
-        $sixtyMinutes = Duration::ofMinutes(minutes: 60);
-        $fifteenMinutes = Duration::ofMinutes(minutes: 15);
+        /** @Given a Duration of 60 minutes */
+        $sixtyMinutes = Duration::fromMinutes(minutes: 60);
+
+        /** @And a Duration of 15 minutes */
+        $fifteenMinutes = Duration::fromMinutes(minutes: 15);
 
         /** @When subtracting */
         $result = $sixtyMinutes->minus(other: $fifteenMinutes);
 
-        /** @Then the result should be 45 minutes in seconds */
-        self::assertSame(2700, $result->seconds);
+        /** @Then the result should be 2700 seconds (45 minutes) */
+        self::assertSame(2700, $result->toSeconds());
     }
 
-    public function testMinusToZero(): void
+    public function testDurationMinusToZero(): void
     {
         /** @Given a Duration of 30 minutes */
-        $thirtyMinutes = Duration::ofMinutes(minutes: 30);
+        $thirtyMinutes = Duration::fromMinutes(minutes: 30);
 
         /** @When subtracting itself */
         $result = $thirtyMinutes->minus(other: $thirtyMinutes);
@@ -162,159 +196,289 @@ final class DurationTest extends TestCase
         self::assertTrue($result->isZero());
     }
 
-    public function testMinusThrowsWhenResultIsNegative(): void
+    public function testDurationMinusWhenResultIsNegative(): void
     {
-        /** @Given a smaller Duration subtracting a larger one */
-        $tenMinutes = Duration::ofMinutes(minutes: 10);
-        $thirtyMinutes = Duration::ofMinutes(minutes: 30);
+        /** @Given a Duration of 10 minutes */
+        $tenMinutes = Duration::fromMinutes(minutes: 10);
 
-        /** @Then an InvalidDuration exception should be thrown */
-        $this->expectException(InvalidDuration::class);
+        /** @And a larger Duration of 30 minutes */
+        $thirtyMinutes = Duration::fromMinutes(minutes: 30);
 
-        /** @When subtracting */
+        /** @Then an exception indicating that subtraction would result in a negative value should be thrown */
+        $this->expectException(InvalidSeconds::class);
+
+        /** @When subtracting the larger from the smaller */
         $tenMinutes->minus(other: $thirtyMinutes);
     }
 
-    public function testIsGreaterThanReturnsTrueWhenLonger(): void
+    public function testDurationDivideReturnsWholeCount(): void
     {
-        /** @Given a Duration of 2 hours and another of 30 minutes */
-        $twoHours = Duration::ofHours(hours: 2);
-        $thirtyMinutes = Duration::ofMinutes(minutes: 30);
+        /** @Given a Duration of 90 minutes */
+        $ninetyMinutes = Duration::fromMinutes(minutes: 90);
+
+        /** @And a Duration of 30 minutes */
+        $thirtyMinutes = Duration::fromMinutes(minutes: 30);
+
+        /** @When dividing */
+        $result = $ninetyMinutes->divide(other: $thirtyMinutes);
+
+        /** @Then the result should be 3 */
+        self::assertSame(3, $result);
+    }
+
+    public function testDurationDivideTruncatesRemainder(): void
+    {
+        /** @Given a Duration of 100 seconds */
+        $hundredSeconds = Duration::fromSeconds(seconds: 100);
+
+        /** @And a Duration of 30 seconds */
+        $thirtySeconds = Duration::fromSeconds(seconds: 30);
+
+        /** @When dividing */
+        $result = $hundredSeconds->divide(other: $thirtySeconds);
+
+        /** @Then the result should be 3 (truncated from 3.33) */
+        self::assertSame(3, $result);
+    }
+
+    public function testDurationDivideByItselfReturnsOne(): void
+    {
+        /** @Given a Duration of 45 minutes */
+        $fortyFiveMinutes = Duration::fromMinutes(minutes: 45);
+
+        /** @When dividing by itself */
+        $result = $fortyFiveMinutes->divide(other: $fortyFiveMinutes);
+
+        /** @Then the result should be 1 */
+        self::assertSame(1, $result);
+    }
+
+    public function testDurationDivideByLargerReturnsZero(): void
+    {
+        /** @Given a Duration of 15 minutes */
+        $fifteenMinutes = Duration::fromMinutes(minutes: 15);
+
+        /** @And a larger Duration of 1 hour */
+        $oneHour = Duration::fromHours(hours: 1);
+
+        /** @When dividing the smaller by the larger */
+        $result = $fifteenMinutes->divide(other: $oneHour);
+
+        /** @Then the result should be 0 */
+        self::assertSame(0, $result);
+    }
+
+    public function testDurationDivideWithExactMultiple(): void
+    {
+        /** @Given a Duration of 2 hours */
+        $twoHours = Duration::fromHours(hours: 2);
+
+        /** @And a Duration of 30 minutes */
+        $thirtyMinutes = Duration::fromMinutes(minutes: 30);
+
+        /** @When dividing */
+        $result = $twoHours->divide(other: $thirtyMinutes);
+
+        /** @Then the result should be 4 */
+        self::assertSame(4, $result);
+    }
+
+    public function testDurationDivideWhenDivisorIsZero(): void
+    {
+        /** @Given a Duration of 1 hour */
+        $oneHour = Duration::fromHours(hours: 1);
+
+        /** @Then an exception indicating that seconds cannot be divided by zero should be thrown */
+        $this->expectException(InvalidSeconds::class);
+
+        /** @When dividing by zero */
+        $oneHour->divide(other: Duration::zero());
+    }
+
+    public function testDurationDivideWithZeroDurationFromSecondsWhenDivisorIsZero(): void
+    {
+        /** @Given a Duration of 30 minutes */
+        $thirtyMinutes = Duration::fromMinutes(minutes: 30);
+
+        /** @And a Duration of zero seconds */
+        $zeroDuration = Duration::fromSeconds(seconds: 0);
+
+        /** @Then an exception indicating that seconds cannot be divided by zero should be thrown */
+        $this->expectException(InvalidSeconds::class);
+
+        /** @When dividing by the zero Duration */
+        $thirtyMinutes->divide(other: $zeroDuration);
+    }
+
+    public function testDurationIsGreaterThanReturnsTrueWhenLonger(): void
+    {
+        /** @Given a Duration of 2 hours */
+        $twoHours = Duration::fromHours(hours: 2);
+
+        /** @And a Duration of 30 minutes */
+        $thirtyMinutes = Duration::fromMinutes(minutes: 30);
 
         /** @Then the longer should be greater than the shorter */
         self::assertTrue($twoHours->isGreaterThan(other: $thirtyMinutes));
+
+        /** @And the shorter should not be greater than the longer */
         self::assertFalse($thirtyMinutes->isGreaterThan(other: $twoHours));
     }
 
-    public function testIsGreaterThanReturnsFalseWhenEqual(): void
+    public function testDurationIsGreaterThanReturnsFalseWhenEqual(): void
     {
-        /** @Given two equal Durations of 30 minutes */
-        $firstThirtyMinutes = Duration::ofMinutes(minutes: 30);
-        $secondThirtyMinutes = Duration::ofMinutes(minutes: 30);
+        /** @Given a Duration of 30 minutes */
+        $firstThirtyMinutes = Duration::fromMinutes(minutes: 30);
+
+        /** @And another Duration of 30 minutes */
+        $secondThirtyMinutes = Duration::fromMinutes(minutes: 30);
 
         /** @Then neither should be greater than the other */
         self::assertFalse($firstThirtyMinutes->isGreaterThan(other: $secondThirtyMinutes));
     }
 
-    public function testIsLessThanReturnsTrueWhenShorter(): void
+    public function testDurationIsLessThanReturnsTrueWhenShorter(): void
     {
-        /** @Given a Duration of 15 minutes and another of 1 hour */
-        $fifteenMinutes = Duration::ofMinutes(minutes: 15);
-        $oneHour = Duration::ofHours(hours: 1);
+        /** @Given a Duration of 15 minutes */
+        $fifteenMinutes = Duration::fromMinutes(minutes: 15);
+
+        /** @And a Duration of 1 hour */
+        $oneHour = Duration::fromHours(hours: 1);
 
         /** @Then the shorter should be less than the longer */
         self::assertTrue($fifteenMinutes->isLessThan(other: $oneHour));
+
+        /** @And the longer should not be less than the shorter */
         self::assertFalse($oneHour->isLessThan(other: $fifteenMinutes));
     }
 
-    public function testIsLessThanReturnsFalseWhenEqual(): void
+    public function testDurationIsLessThanReturnsFalseWhenEqual(): void
     {
-        /** @Given two equal Durations of 1 hour */
-        $firstHour = Duration::ofHours(hours: 1);
-        $secondHour = Duration::ofHours(hours: 1);
+        /** @Given a Duration of 1 hour */
+        $firstHour = Duration::fromHours(hours: 1);
+
+        /** @And another Duration of 1 hour */
+        $secondHour = Duration::fromHours(hours: 1);
 
         /** @Then neither should be less than the other */
         self::assertFalse($firstHour->isLessThan(other: $secondHour));
     }
 
-    public function testToMinutes(): void
+    public function testDurationToSeconds(): void
     {
-        /** @Given a Duration of 5400 seconds (90 minutes) */
-        $ninetyMinutesInSeconds = Duration::ofSeconds(seconds: 5400);
+        /** @Given a Duration created from 30 minutes */
+        $duration = Duration::fromMinutes(minutes: 30);
+
+        /** @Then toSeconds should return 1800 */
+        self::assertSame(1800, $duration->toSeconds());
+    }
+
+    public function testDurationToMinutes(): void
+    {
+        /** @Given a Duration created from 5400 seconds */
+        $duration = Duration::fromSeconds(seconds: 5400);
 
         /** @Then toMinutes should return 90 */
-        self::assertSame(90, $ninetyMinutesInSeconds->toMinutes());
+        self::assertSame(90, $duration->toMinutes());
     }
 
-    public function testToMinutesTruncates(): void
+    public function testDurationToMinutesTruncates(): void
     {
-        /** @Given a Duration of 100 seconds (1 minute and 40 seconds) */
-        $hundredSeconds = Duration::ofSeconds(seconds: 100);
+        /** @Given a Duration created from 100 seconds */
+        $duration = Duration::fromSeconds(seconds: 100);
 
-        /** @Then toMinutes should return 1 (truncated) */
-        self::assertSame(1, $hundredSeconds->toMinutes());
+        /** @Then toMinutes should return 1 (truncated from 1.67) */
+        self::assertSame(1, $duration->toMinutes());
     }
 
-    public function testToHours(): void
+    public function testDurationToHours(): void
     {
-        /** @Given a Duration of 2 hours */
-        $twoHours = Duration::ofHours(hours: 2);
+        /** @Given a Duration created from 2 hours */
+        $duration = Duration::fromHours(hours: 2);
 
         /** @Then toHours should return 2 */
-        self::assertSame(2, $twoHours->toHours());
+        self::assertSame(2, $duration->toHours());
     }
 
-    public function testToHoursTruncates(): void
+    public function testDurationToHoursTruncates(): void
     {
-        /** @Given a Duration of 5400 seconds (1 hour and 30 minutes) */
-        $ninetyMinutesInSeconds = Duration::ofSeconds(seconds: 5400);
+        /** @Given a Duration created from 5400 seconds */
+        $duration = Duration::fromSeconds(seconds: 5400);
 
-        /** @Then toHours should return 1 (truncated) */
-        self::assertSame(1, $ninetyMinutesInSeconds->toHours());
+        /** @Then toHours should return 1 (truncated from 1.5) */
+        self::assertSame(1, $duration->toHours());
     }
 
-    public function testToDays(): void
+    public function testDurationToDays(): void
     {
-        /** @Given a Duration of 3 days */
-        $threeDays = Duration::ofDays(days: 3);
+        /** @Given a Duration created from 3 days */
+        $duration = Duration::fromDays(days: 3);
 
         /** @Then toDays should return 3 */
-        self::assertSame(3, $threeDays->toDays());
+        self::assertSame(3, $duration->toDays());
     }
 
-    public function testToDaysTruncates(): void
+    public function testDurationToDaysTruncates(): void
     {
-        /** @Given a Duration of 36 hours (1.5 days) */
-        $thirtySixHours = Duration::ofHours(hours: 36);
+        /** @Given a Duration created from 36 hours */
+        $duration = Duration::fromHours(hours: 36);
 
-        /** @Then toDays should return 1 (truncated) */
-        self::assertSame(1, $thirtySixHours->toDays());
+        /** @Then toDays should return 1 (truncated from 1.5) */
+        self::assertSame(1, $duration->toDays());
     }
 
-    public function testPlusAndMinusAreInverse(): void
+    public function testDurationPlusAndMinusAreInverse(): void
     {
-        /** @Given a Duration of 45 minutes and an addend of 15 minutes */
-        $fortyFiveMinutes = Duration::ofMinutes(minutes: 45);
-        $fifteenMinutes = Duration::ofMinutes(minutes: 15);
+        /** @Given a Duration of 45 minutes */
+        $fortyFiveMinutes = Duration::fromMinutes(minutes: 45);
+
+        /** @And an addend of 15 minutes */
+        $fifteenMinutes = Duration::fromMinutes(minutes: 15);
 
         /** @When adding and then subtracting the same amount */
         $result = $fortyFiveMinutes->plus(other: $fifteenMinutes)->minus(other: $fifteenMinutes);
 
         /** @Then the result should equal the original */
-        self::assertSame($fortyFiveMinutes->seconds, $result->seconds);
+        self::assertSame($fortyFiveMinutes->toSeconds(), $result->toSeconds());
     }
 
-    public function testDifferentFactoriesProduceSameResult(): void
+    public function testDurationDifferentFactoriesProduceSameResult(): void
     {
-        /** @Given a Duration created from each factory for the same amount of time (1 day) */
-        $fromSeconds = Duration::ofSeconds(seconds: 86400);
-        $fromMinutes = Duration::ofMinutes(minutes: 1440);
-        $fromHours = Duration::ofHours(hours: 24);
-        $fromDays = Duration::ofDays(days: 1);
+        /** @Given a Duration of 86400 seconds */
+        $fromSeconds = Duration::fromSeconds(seconds: 86400);
+
+        /** @And a Duration of 1440 minutes */
+        $fromMinutes = Duration::fromMinutes(minutes: 1440);
+
+        /** @And a Duration of 24 hours */
+        $fromHours = Duration::fromHours(hours: 24);
+
+        /** @And a Duration of 1 day */
+        $fromDays = Duration::fromDays(days: 1);
 
         /** @Then all should hold the same number of seconds */
-        self::assertSame($fromSeconds->seconds, $fromMinutes->seconds);
-        self::assertSame($fromMinutes->seconds, $fromHours->seconds);
-        self::assertSame($fromHours->seconds, $fromDays->seconds);
+        self::assertSame($fromSeconds->toSeconds(), $fromMinutes->toSeconds());
+        self::assertSame($fromMinutes->toSeconds(), $fromHours->toSeconds());
+        self::assertSame($fromHours->toSeconds(), $fromDays->toSeconds());
     }
 
-    public function testOfHoursWithZero(): void
+    public function testDurationDivideIsConsistentWithSlotExpansion(): void
     {
-        /** @Given a Duration of zero hours */
-        $duration = Duration::ofHours(hours: 0);
+        /** @Given a Duration of 90 minutes */
+        $appointmentDuration = Duration::fromMinutes(minutes: 90);
 
-        /** @Then it should be zero */
-        self::assertSame(0, $duration->seconds);
-        self::assertTrue($duration->isZero());
-    }
+        /** @And a slot size of 30 minutes */
+        $slotSize = Duration::fromMinutes(minutes: 30);
 
-    public function testOfDaysWithZero(): void
-    {
-        /** @Given a Duration of zero days */
-        $duration = Duration::ofDays(days: 0);
+        /** @When dividing the appointment by the slot size */
+        $slotCount = $appointmentDuration->divide(other: $slotSize);
 
-        /** @Then it should be zero */
-        self::assertSame(0, $duration->seconds);
-        self::assertTrue($duration->isZero());
+        /** @Then the slot count should be 3 */
+        self::assertSame(3, $slotCount);
+
+        /** @And reconstructing from slot count should match the original duration */
+        $reconstructed = Duration::fromMinutes(minutes: $slotCount * $slotSize->toMinutes());
+
+        self::assertSame($appointmentDuration->toSeconds(), $reconstructed->toSeconds());
     }
 }

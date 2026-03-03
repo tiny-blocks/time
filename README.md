@@ -8,6 +8,8 @@
     * [Instant](#instant)
     * [Duration](#duration)
     * [Period](#period)
+    * [DayOfWeek](#dayofweek)
+    * [TimeOfDay](#timeofday)
     * [Timezone](#timezone)
     * [Timezones](#timezones)
 * [License](#license)
@@ -113,9 +115,9 @@ use TinyBlocks\Time\Duration;
 
 $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
-$instant->plus(duration: Duration::ofMinutes(minutes: 30))->toIso8601();  # 2026-02-17T10:30:00+00:00
-$instant->plus(duration: Duration::ofHours(hours: 2))->toIso8601();       # 2026-02-17T12:00:00+00:00
-$instant->minus(duration: Duration::ofSeconds(seconds: 60))->toIso8601(); # 2026-02-17T09:59:00+00:00
+$instant->plus(duration: Duration::fromMinutes(minutes: 30))->toIso8601();  # 2026-02-17T10:30:00+00:00
+$instant->plus(duration: Duration::fromHours(hours: 2))->toIso8601();       # 2026-02-17T12:00:00+00:00
+$instant->minus(duration: Duration::fromSeconds(seconds: 60))->toIso8601(); # 2026-02-17T09:59:00+00:00
 ```
 
 #### Measuring distance between instants
@@ -130,7 +132,7 @@ $end = Instant::fromString(value: '2026-02-17T11:30:00+00:00');
 
 $duration = $start->durationUntil(other: $end);
 
-$duration->seconds;     # 5400
+$duration->toSeconds(); # 5400
 $duration->toMinutes(); # 90
 $duration->toHours();   # 1
 ```
@@ -138,7 +140,7 @@ $duration->toHours();   # 1
 The result is always non-negative regardless of direction:
 
 ```php
-$end->durationUntil(other: $start)->seconds; # 5400
+$end->durationUntil(other: $start)->toSeconds(); # 5400
 ```
 
 #### Comparing instants
@@ -170,16 +172,16 @@ timeline — it expresses only "how much" time.
 use TinyBlocks\Time\Duration;
 
 $zero    = Duration::zero();
-$seconds = Duration::ofSeconds(seconds: 90);
-$minutes = Duration::ofMinutes(minutes: 30);
-$hours   = Duration::ofHours(hours: 2);
-$days    = Duration::ofDays(days: 7);
+$seconds = Duration::fromSeconds(seconds: 90);
+$minutes = Duration::fromMinutes(minutes: 30);
+$hours   = Duration::fromHours(hours: 2);
+$days    = Duration::fromDays(days: 7);
 ```
 
 All factories reject negative values:
 
 ```php
-Duration::ofMinutes(minutes: -5); # throws InvalidDuration
+Duration::fromMinutes(minutes: -5); # throws InvalidSeconds
 ```
 
 #### Arithmetic
@@ -187,17 +189,36 @@ Duration::ofMinutes(minutes: -5); # throws InvalidDuration
 ```php
 use TinyBlocks\Time\Duration;
 
-$a = Duration::ofMinutes(minutes: 30);
-$b = Duration::ofMinutes(minutes: 15);
+$thirtyMinutes = Duration::fromMinutes(minutes: 30);
+$fifteenMinutes = Duration::fromMinutes(minutes: 15);
 
-$a->plus(other: $b)->seconds;  # 2700 (45 minutes)
-$a->minus(other: $b)->seconds; # 900 (15 minutes)
+$thirtyMinutes->plus(other: $fifteenMinutes)->toSeconds();  # 2700 (45 minutes)
+$thirtyMinutes->minus(other: $fifteenMinutes)->toSeconds(); # 900 (15 minutes)
 ```
 
 Subtraction that would produce a negative result throws an exception:
 
 ```php
-$b->minus(other: $a); # throws InvalidDuration
+$fifteenMinutes->minus(other: $thirtyMinutes); # throws InvalidSeconds
+```
+
+#### Division
+
+Returns the number of times one `Duration` fits wholly into another. The result is truncated toward zero:
+
+```php
+use TinyBlocks\Time\Duration;
+
+$total = Duration::fromMinutes(minutes: 90);
+$slot = Duration::fromMinutes(minutes: 30);
+
+$total->divide(other: $slot); # 3
+```
+
+Division by a zero `Duration` throws an exception:
+
+```php
+$total->divide(other: Duration::zero()); # throws InvalidSeconds
 ```
 
 #### Comparing durations
@@ -205,8 +226,8 @@ $b->minus(other: $a); # throws InvalidDuration
 ```php
 use TinyBlocks\Time\Duration;
 
-$short = Duration::ofMinutes(minutes: 15);
-$long = Duration::ofHours(hours: 2);
+$short = Duration::fromMinutes(minutes: 15);
+$long = Duration::fromHours(hours: 2);
 
 $short->isLessThan(other: $long);    # true
 $long->isGreaterThan(other: $short); # true
@@ -221,8 +242,9 @@ Conversions truncate toward zero when the duration is not an exact multiple:
 ```php
 use TinyBlocks\Time\Duration;
 
-$duration = Duration::ofSeconds(seconds: 5400);
+$duration = Duration::fromSeconds(seconds: 5400);
 
+$duration->toSeconds(); # 5400
 $duration->toMinutes(); # 90
 $duration->toHours();   # 1
 $duration->toDays();    # 0
@@ -239,7 +261,7 @@ end is exclusive.
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Period;
 
-$period = Period::of(
+$period = Period::from(
     from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
     to: Instant::fromString(value: '2026-02-17T11:00:00+00:00')
 );
@@ -251,7 +273,7 @@ $period->to->toIso8601();   # 2026-02-17T11:00:00+00:00
 The start must be strictly before the end:
 
 ```php
-Period::of(from: $later, to: $earlier); # throws InvalidPeriod
+Period::from(from: $later, to: $earlier); # throws InvalidPeriod
 ```
 
 #### Creating from a start and duration
@@ -263,7 +285,7 @@ use TinyBlocks\Time\Period;
 
 $period = Period::startingAt(
     from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
-    duration: Duration::ofMinutes(minutes: 90)
+    duration: Duration::fromMinutes(minutes: 90)
 );
 
 $period->from->toIso8601(); # 2026-02-17T10:00:00+00:00
@@ -273,7 +295,7 @@ $period->to->toIso8601();   # 2026-02-17T11:30:00+00:00
 #### Getting the duration
 
 ```php
-$period->duration()->seconds;    # 5400
+$period->duration()->toSeconds(); # 5400
 $period->duration()->toMinutes(); # 90
 ```
 
@@ -300,11 +322,11 @@ use TinyBlocks\Time\Period;
 
 $periodA = Period::startingAt(
     from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
-    duration: Duration::ofHours(hours: 1)
+    duration: Duration::fromHours(hours: 1)
 );
 $periodB = Period::startingAt(
     from: Instant::fromString(value: '2026-02-17T10:30:00+00:00'),
-    duration: Duration::ofHours(hours: 1)
+    duration: Duration::fromHours(hours: 1)
 );
 
 $periodA->overlapsWith(other: $periodB); # true
@@ -320,14 +342,136 @@ use TinyBlocks\Time\Period;
 
 $first = Period::startingAt(
     from: Instant::fromString(value: '2026-02-17T10:00:00+00:00'),
-    duration: Duration::ofHours(hours: 1)
+    duration: Duration::fromHours(hours: 1)
 );
 $second = Period::startingAt(
     from: Instant::fromString(value: '2026-02-17T11:00:00+00:00'),
-    duration: Duration::ofHours(hours: 1)
+    duration: Duration::fromHours(hours: 1)
 );
 
 $first->overlapsWith(other: $second); # false
+```
+
+### DayOfWeek
+
+A `DayOfWeek` represents a day of the week following ISO 8601, where Monday is 1 and Sunday is 7.
+
+#### Deriving from an Instant
+
+```php
+use TinyBlocks\Time\DayOfWeek;
+use TinyBlocks\Time\Instant;
+
+$instant = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+$day = DayOfWeek::fromInstant(instant: $instant);
+
+$day;        # DayOfWeek::Tuesday
+$day->value; # 2
+```
+
+#### Checking weekday or weekend
+
+```php
+use TinyBlocks\Time\DayOfWeek;
+
+DayOfWeek::Monday->isWeekday();   # true
+DayOfWeek::Monday->isWeekend();   # false
+DayOfWeek::Saturday->isWeekday(); # false
+DayOfWeek::Saturday->isWeekend(); # true
+```
+
+### TimeOfDay
+
+A `TimeOfDay` represents a time of day (hour and minute) without date or timezone context. Values range from 00:00 to
+23:59.
+
+#### Creating from components
+
+```php
+use TinyBlocks\Time\TimeOfDay;
+
+$time = TimeOfDay::from(hour: 8, minute: 30);
+
+$time->hour;   # 8
+$time->minute; # 30
+```
+
+#### Creating from a string
+
+Parses a string in `HH:MM` format:
+
+```php
+use TinyBlocks\Time\TimeOfDay;
+
+$time = TimeOfDay::fromString(value: '14:30');
+
+$time->hour;   # 14
+$time->minute; # 30
+```
+
+#### Deriving from an Instant
+
+Extracts the time of day from an `Instant` in UTC:
+
+```php
+use TinyBlocks\Time\Instant;
+use TinyBlocks\Time\TimeOfDay;
+
+$instant = Instant::fromString(value: '2026-02-17T14:30:00+00:00');
+$time = TimeOfDay::fromInstant(instant: $instant);
+
+$time->hour;   # 14
+$time->minute; # 30
+```
+
+#### Named constructors
+
+```php
+use TinyBlocks\Time\TimeOfDay;
+
+$midnight = TimeOfDay::midnight(); # 00:00
+$noon = TimeOfDay::noon();         # 12:00
+```
+
+#### Comparing times
+
+```php
+use TinyBlocks\Time\TimeOfDay;
+
+$morning = TimeOfDay::from(hour: 8, minute: 0);
+$afternoon = TimeOfDay::from(hour: 14, minute: 30);
+
+$morning->isBefore(other: $afternoon);        # true
+$morning->isAfter(other: $afternoon);         # false
+$morning->isBeforeOrEqual(other: $afternoon); # true
+$afternoon->isAfterOrEqual(other: $morning);  # true
+```
+
+#### Measuring distance between times
+
+Returns the `Duration` between two times. The second time must be after the first:
+
+```php
+use TinyBlocks\Time\TimeOfDay;
+
+$start = TimeOfDay::from(hour: 8, minute: 0);
+$end = TimeOfDay::from(hour: 12, minute: 30);
+
+$duration = $start->durationUntil(other: $end);
+
+$duration->toMinutes(); # 270
+```
+
+#### Converting to other representations
+
+```php
+use TinyBlocks\Time\TimeOfDay;
+
+$time = TimeOfDay::from(hour: 8, minute: 30);
+
+$time->toMinutesSinceMidnight();  # 510
+$time->toDuration()->toSeconds(); # 30600
+$time->toString();                # 08:30
 ```
 
 ### Timezone
