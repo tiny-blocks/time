@@ -20,7 +20,7 @@ final readonly class TimeOfDay implements ValueObject
     private const int MAX_MINUTE = 59;
     private const int MINUTES_PER_HOUR = 60;
 
-    private const string PATTERN = '/^(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?:\d{2}))?$/';
+    private const string PATTERN = '/^(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?:[0-5]\d))?$/';
 
     private function __construct(public int $hour, public int $minute)
     {
