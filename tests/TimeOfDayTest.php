@@ -188,11 +188,13 @@ final class TimeOfDayTest extends TestCase
 
     public function testTimeOfDayFromStringWhenHasSeconds(): void
     {
-        /** @Then an exception indicating that the format is invalid should be thrown */
-        $this->expectException(InvalidTimeOfDay::class);
+        /** @Given a time string with seconds */
+        $time = TimeOfDay::fromString(value: '08:30:00');
 
-        /** @When parsing a string with seconds */
-        TimeOfDay::fromString(value: '08:30:00');
+        /** @Then the seconds should be discarded and the components should match */
+        self::assertSame(8, $time->hour);
+        self::assertSame(30, $time->minute);
+        self::assertSame('08:30', $time->toString());
     }
 
     public function testTimeOfDayFromStringWhenHourOutOfRange(): void

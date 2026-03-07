@@ -380,6 +380,19 @@ DayOfWeek::Saturday->isWeekday(); # false
 DayOfWeek::Saturday->isWeekend(); # true
 ```
 
+#### Calculating forward distance
+
+Returns the number of days forward from one day to another, always in the range `[0, 6]`. The distance is measured
+forward through the week:
+
+```php
+use TinyBlocks\Time\DayOfWeek;
+
+DayOfWeek::Monday->distanceTo(other: DayOfWeek::Wednesday); # 2
+DayOfWeek::Friday->distanceTo(other: DayOfWeek::Monday);    # 3 (forward through Sat, Sun, Mon)
+DayOfWeek::Monday->distanceTo(other: DayOfWeek::Monday);    # 0
+```
+
 ### TimeOfDay
 
 A `TimeOfDay` represents a time of day (hour and minute) without date or timezone context. Values range from 00:00 to
@@ -398,7 +411,7 @@ $time->minute; # 30
 
 #### Creating from a string
 
-Parses a string in `HH:MM` format:
+Parses a string in `HH:MM` or `HH:MM:SS` format. When seconds are present, they are discarded:
 
 ```php
 use TinyBlocks\Time\TimeOfDay;
@@ -407,6 +420,18 @@ $time = TimeOfDay::fromString(value: '14:30');
 
 $time->hour;   # 14
 $time->minute; # 30
+```
+
+Also accepts the `HH:MM:SS` format commonly returned by databases:
+
+```php
+use TinyBlocks\Time\TimeOfDay;
+
+$time = TimeOfDay::fromString(value: '08:30:00');
+
+$time->hour;       # 8
+$time->minute;     # 30
+$time->toString(); # 08:30
 ```
 
 #### Deriving from an Instant

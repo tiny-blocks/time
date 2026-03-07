@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Test\TinyBlocks\Time;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\DayOfWeek;
 use TinyBlocks\Time\Instant;
@@ -116,9 +117,13 @@ final class DayOfWeekTest extends TestCase
     public function testDayOfWeekWeekdayAndWeekendAreMutuallyExclusive(): void
     {
         /** @Then every day should be exactly one of weekday or weekend */
-        foreach (DayOfWeek::cases() as $day) {
-            self::assertNotSame($day->isWeekday(), $day->isWeekend());
-        }
+        self::assertNotSame(DayOfWeek::Monday->isWeekday(), DayOfWeek::Monday->isWeekend());
+        self::assertNotSame(DayOfWeek::Tuesday->isWeekday(), DayOfWeek::Tuesday->isWeekend());
+        self::assertNotSame(DayOfWeek::Wednesday->isWeekday(), DayOfWeek::Wednesday->isWeekend());
+        self::assertNotSame(DayOfWeek::Thursday->isWeekday(), DayOfWeek::Thursday->isWeekend());
+        self::assertNotSame(DayOfWeek::Friday->isWeekday(), DayOfWeek::Friday->isWeekend());
+        self::assertNotSame(DayOfWeek::Saturday->isWeekday(), DayOfWeek::Saturday->isWeekend());
+        self::assertNotSame(DayOfWeek::Sunday->isWeekday(), DayOfWeek::Sunday->isWeekend());
     }
 
     public function testDayOfWeekExactlyFiveWeekdays(): void
@@ -141,5 +146,194 @@ final class DayOfWeekTest extends TestCase
         );
 
         self::assertCount(2, $weekends);
+    }
+
+    #[DataProvider('sameDayDistanceDataProvider')]
+    public function testDayOfWeekDistanceToSameDayReturnsZero(DayOfWeek $day): void
+    {
+        /** @Given the same day of the week */
+        /** @Then the distance to itself should be zero */
+        self::assertSame(0, $day->distanceTo(other: $day));
+    }
+
+    #[DataProvider('forwardDistanceDataProvider')]
+    public function testDayOfWeekDistanceToForward(DayOfWeek $from, DayOfWeek $to, int $expectedDistance): void
+    {
+        /** @Given a starting day and a target day */
+        /** @Then the forward distance should match the expected value */
+        self::assertSame($expectedDistance, $from->distanceTo(other: $to));
+    }
+
+    #[DataProvider('wrapAroundDistanceDataProvider')]
+    public function testDayOfWeekDistanceToWrapsAroundWeek(DayOfWeek $from, DayOfWeek $to, int $expectedDistance): void
+    {
+        /** @Given a starting day that is after the target day in the week */
+        /** @Then the distance should wrap forward through the end of the week */
+        self::assertSame($expectedDistance, $from->distanceTo(other: $to));
+    }
+
+    #[DataProvider('asymmetricDistanceDataProvider')]
+    public function testDayOfWeekDistanceToIsNotSymmetric(
+        DayOfWeek $from,
+        DayOfWeek $to,
+        int $expectedForward,
+        int $expectedBackward
+    ): void {
+        /** @Given two distinct days of the week */
+        /** @Then the forward and backward distances should differ */
+        self::assertSame($expectedForward, $from->distanceTo(other: $to));
+        self::assertSame($expectedBackward, $to->distanceTo(other: $from));
+
+        /** @And together they should complete a full week */
+        self::assertSame(7, $expectedForward + $expectedBackward);
+    }
+
+    #[DataProvider('allPairsDistanceDataProvider')]
+    public function testDayOfWeekDistanceToNeverExceedsSix(DayOfWeek $from, DayOfWeek $to): void
+    {
+        /** @Given any pair of days */
+        $distance = $from->distanceTo(other: $to);
+
+        /** @Then the distance should be in the range [0, 6] */
+        self::assertGreaterThanOrEqual(0, $distance);
+        self::assertLessThanOrEqual(6, $distance);
+    }
+
+    public static function sameDayDistanceDataProvider(): array
+    {
+        return [
+            'Monday to Monday'       => ['day' => DayOfWeek::Monday],
+            'Tuesday to Tuesday'     => ['day' => DayOfWeek::Tuesday],
+            'Wednesday to Wednesday' => ['day' => DayOfWeek::Wednesday],
+            'Thursday to Thursday'   => ['day' => DayOfWeek::Thursday],
+            'Friday to Friday'       => ['day' => DayOfWeek::Friday],
+            'Saturday to Saturday'   => ['day' => DayOfWeek::Saturday],
+            'Sunday to Sunday'       => ['day' => DayOfWeek::Sunday]
+        ];
+    }
+
+    public static function forwardDistanceDataProvider(): array
+    {
+        return [
+            'Monday to Tuesday'     => [
+                'from'             => DayOfWeek::Monday,
+                'to'               => DayOfWeek::Tuesday,
+                'expectedDistance' => 1
+            ],
+            'Monday to Wednesday'   => [
+                'from'             => DayOfWeek::Monday,
+                'to'               => DayOfWeek::Wednesday,
+                'expectedDistance' => 2
+            ],
+            'Monday to Thursday'    => [
+                'from'             => DayOfWeek::Monday,
+                'to'               => DayOfWeek::Thursday,
+                'expectedDistance' => 3
+            ],
+            'Monday to Friday'      => [
+                'from'             => DayOfWeek::Monday,
+                'to'               => DayOfWeek::Friday,
+                'expectedDistance' => 4
+            ],
+            'Monday to Saturday'    => [
+                'from'             => DayOfWeek::Monday,
+                'to'               => DayOfWeek::Saturday,
+                'expectedDistance' => 5
+            ],
+            'Monday to Sunday'      => [
+                'from'             => DayOfWeek::Monday,
+                'to'               => DayOfWeek::Sunday,
+                'expectedDistance' => 6
+            ],
+            'Tuesday to Thursday'   => [
+                'from'             => DayOfWeek::Tuesday,
+                'to'               => DayOfWeek::Thursday,
+                'expectedDistance' => 2
+            ],
+            'Wednesday to Saturday' => [
+                'from'             => DayOfWeek::Wednesday,
+                'to'               => DayOfWeek::Saturday,
+                'expectedDistance' => 3
+            ]
+        ];
+    }
+
+    public static function wrapAroundDistanceDataProvider(): array
+    {
+        return [
+            'Friday to Monday'     => ['from' => DayOfWeek::Friday, 'to' => DayOfWeek::Monday, 'expectedDistance' => 3],
+            'Saturday to Monday'   => [
+                'from'             => DayOfWeek::Saturday,
+                'to'               => DayOfWeek::Monday,
+                'expectedDistance' => 2
+            ],
+            'Sunday to Monday'     => ['from' => DayOfWeek::Sunday, 'to' => DayOfWeek::Monday, 'expectedDistance' => 1],
+            'Wednesday to Monday'  => [
+                'from'             => DayOfWeek::Wednesday,
+                'to'               => DayOfWeek::Monday,
+                'expectedDistance' => 5
+            ],
+            'Saturday to Thursday' => [
+                'from'             => DayOfWeek::Saturday,
+                'to'               => DayOfWeek::Thursday,
+                'expectedDistance' => 5
+            ],
+            'Thursday to Tuesday'  => [
+                'from'             => DayOfWeek::Thursday,
+                'to'               => DayOfWeek::Tuesday,
+                'expectedDistance' => 5
+            ],
+            'Sunday to Wednesday'  => [
+                'from'             => DayOfWeek::Sunday,
+                'to'               => DayOfWeek::Wednesday,
+                'expectedDistance' => 3
+            ]
+        ];
+    }
+
+    public static function asymmetricDistanceDataProvider(): array
+    {
+        return [
+            'Monday and Wednesday' => [
+                'from'             => DayOfWeek::Monday,
+                'to'               => DayOfWeek::Wednesday,
+                'expectedForward'  => 2,
+                'expectedBackward' => 5
+            ],
+            'Tuesday and Friday'   => [
+                'from'             => DayOfWeek::Tuesday,
+                'to'               => DayOfWeek::Friday,
+                'expectedForward'  => 3,
+                'expectedBackward' => 4
+            ],
+            'Thursday and Sunday'  => [
+                'from'             => DayOfWeek::Thursday,
+                'to'               => DayOfWeek::Sunday,
+                'expectedForward'  => 3,
+                'expectedBackward' => 4
+            ],
+            'Saturday and Monday'  => [
+                'from'             => DayOfWeek::Saturday,
+                'to'               => DayOfWeek::Monday,
+                'expectedForward'  => 2,
+                'expectedBackward' => 5
+            ]
+        ];
+    }
+
+    public static function allPairsDistanceDataProvider(): array
+    {
+        $pairs = [];
+
+        $days = DayOfWeek::cases();
+
+        foreach ($days as $from) {
+            foreach ($days as $to) {
+                $label = sprintf('%s to %s', $from->name, $to->name);
+                $pairs[$label] = ['from' => $from, 'to' => $to];
+            }
+        }
+
+        return $pairs;
     }
 }

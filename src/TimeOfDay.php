@@ -20,6 +20,8 @@ final readonly class TimeOfDay implements ValueObject
     private const int MAX_MINUTE = 59;
     private const int MINUTES_PER_HOUR = 60;
 
+    private const string PATTERN = '/^(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?:\d{2}))?$/';
+
     private function __construct(public int $hour, public int $minute)
     {
     }
@@ -46,15 +48,16 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Creates a TimeOfDay from a string in "HH:MM" format.
+     * Creates a TimeOfDay from a string in "HH:MM" or "HH:MM:SS" format.
+     * When seconds are present, they are discarded.
      *
-     * @param string $value The time string (e.g. "08:30", "14:00").
+     * @param string $value The time string (e.g. "08:30", "14:00", "08:30:00").
      * @return TimeOfDay The created time of day.
      * @throws InvalidTimeOfDay If the format is invalid or values are out of range.
      */
     public static function fromString(string $value): TimeOfDay
     {
-        if (preg_match('/^(?P<hour>\d{2}):(?P<minute>\d{2})$/', $value, $matches) !== 1) {
+        if (preg_match(self::PATTERN, $value, $matches) !== 1) {
             throw InvalidTimeOfDay::becauseFormatIsInvalid(value: $value);
         }
 
