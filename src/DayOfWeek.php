@@ -17,6 +17,8 @@ enum DayOfWeek: int
     case Saturday = 6;
     case Sunday = 7;
 
+    private const int DAYS_IN_WEEK = 7;
+
     /**
      * Derives the day of the week from an Instant.
      *
@@ -48,5 +50,22 @@ enum DayOfWeek: int
     public function isWeekend(): bool
     {
         return $this->value >= 6;
+    }
+
+    /**
+     * Returns the forward distance in days from this day to another day of the week.
+     * The distance is always in the range [0, 6], measured forward through the week.
+     *
+     * For example:
+     * - Monday->distanceTo(Wednesday) returns 2
+     * - Friday->distanceTo(Monday) returns 3 (forward through Sat, Sun, Mon)
+     * - Monday->distanceTo(Monday) returns 0
+     *
+     * @param DayOfWeek $other The target day of the week.
+     * @return int The number of days forward from this day to the other (0–6).
+     */
+    public function distanceTo(DayOfWeek $other): int
+    {
+        return ($other->value - $this->value + self::DAYS_IN_WEEK) % self::DAYS_IN_WEEK;
     }
 }
