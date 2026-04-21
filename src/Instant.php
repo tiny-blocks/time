@@ -19,7 +19,6 @@ final readonly class Instant implements ValueObject
 
     private const string UNIX_FORMAT = 'U';
     private const string ISO8601_FORMAT = 'Y-m-d\TH:i:sP';
-    private const string MICROSECOND_FORMAT = 'U.u';
 
     private function __construct(private DateTimeImmutable $datetime)
     {
@@ -33,14 +32,7 @@ final readonly class Instant implements ValueObject
     public static function now(): Instant
     {
         $utc = Timezone::utc()->toDateTimeZone();
-        $datetime = DateTimeImmutable::createFromFormat(
-            self::MICROSECOND_FORMAT,
-            sprintf('%.6F', microtime(true)),
-            $utc
-        );
-
-        /** @var DateTimeImmutable $datetime */
-        return new Instant(datetime: $datetime->setTimezone($utc));
+        return new Instant(datetime: new DateTimeImmutable('now', $utc));
     }
 
     /**

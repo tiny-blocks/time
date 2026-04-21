@@ -19,8 +19,10 @@
 
 ## Overview
 
-Value Objects representing time in an immutable and strict way, focused on safe parsing, formatting, normalization and
-temporal arithmetic.
+Models time as immutable value objects for PHP, including instants, durations, periods, timezones, time-of-day, and
+day-of-week. All instants are normalized to UTC with microsecond precision, with strict parsing, formatting, and
+arithmetic operations. Declared as `final readonly class` for language-level immutability, with structural equality
+provided by the tiny-blocks value-object contract.
 
 <div id='installation'></div>
 
