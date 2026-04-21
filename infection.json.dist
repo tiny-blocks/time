@@ -17,7 +17,7 @@
     },
     "mutators": {
         "@default": true,
-        "AssignCoalesce": false
+        "ProtectedVisibility": false
     },
     "minCoveredMsi": 100,
     "testFramework": "phpunit"

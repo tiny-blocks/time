@@ -16,7 +16,7 @@ final readonly class Timezone
 
     private function __construct(string $identifier)
     {
-        if (empty($identifier) || !in_array($identifier, self::allIdentifiers(), true)) {
+        if (empty($identifier) || !in_array($identifier, DateTimeZone::listIdentifiers(), true)) {
             throw new InvalidTimezone(identifier: $identifier);
         }
 
@@ -63,16 +63,5 @@ final readonly class Timezone
     public function toDateTimeZone(): DateTimeZone
     {
         return new DateTimeZone($this->value);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function allIdentifiers(): array
-    {
-        /** @var list<string>|null $identifiers */
-        static $identifiers = null;
-
-        return $identifiers ??= DateTimeZone::listIdentifiers();
     }
 }
