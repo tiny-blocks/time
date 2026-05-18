@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Test\TinyBlocks\Time;
+namespace Test\TinyBlocks\Time\Unit;
 
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\Duration;
-use TinyBlocks\Time\Internal\Exceptions\InvalidSeconds;
+use TinyBlocks\Time\Exceptions\InvalidSeconds;
 
 final class DurationTest extends TestCase
 {

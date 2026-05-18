@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace TinyBlocks\Time;
 
 use DateTimeImmutable;
-use TinyBlocks\Time\Internal\Exceptions\InvalidInstant;
+use TinyBlocks\Time\Exceptions\InvalidInstant;
 use TinyBlocks\Time\Internal\TextDecoder;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
@@ -32,7 +32,7 @@ final readonly class Instant implements ValueObject
     public static function now(): Instant
     {
         $utc = Timezone::utc()->toDateTimeZone();
-        return new Instant(datetime: new DateTimeImmutable('now', $utc));
+        return new Instant(datetime: new DateTimeImmutable(datetime: 'now', timezone: $utc));
     }
 
     /**
@@ -73,7 +73,8 @@ final readonly class Instant implements ValueObject
      */
     public function plus(Duration $duration): Instant
     {
-        $modified = $this->datetime->modify(sprintf('+%d seconds', $duration->toSeconds()));
+        $template = '+%d seconds';
+        $modified = $this->datetime->modify(sprintf($template, $duration->toSeconds()));
 
         return new Instant(datetime: $modified);
     }
@@ -86,7 +87,8 @@ final readonly class Instant implements ValueObject
      */
     public function minus(Duration $duration): Instant
     {
-        $modified = $this->datetime->modify(sprintf('-%d seconds', $duration->toSeconds()));
+        $template = '-%d seconds';
+        $modified = $this->datetime->modify(sprintf($template, $duration->toSeconds()));
 
         return new Instant(datetime: $modified);
     }

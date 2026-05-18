@@ -1,8 +1,30 @@
 parameters:
-  paths:
-    - src
-  level: 9
-  tmpDir: report/phpstan
-  ignoreErrors:
-    - '#Parameter#'
-  reportUnmatchedIgnoredErrors: false
+    level: max
+    paths:
+        - src
+        - tests
+    ignoreErrors:
+        # Property and constructor parameter are intentionally untyped; PHPDoc on constructors is prohibited per code-style rule. Suppress missing iterable value-type plus cascading return.type and argument.type errors that propagate from the untyped property.
+        - identifier: missingType.iterableValue
+          path: src/Timezones.php
+
+        - identifier: return.type
+          path: src/Timezones.php
+
+        - identifier: argument.type
+          path: src/Timezones.php
+
+        # PHPDoc is prohibited inside tests/ per documentation rule; suppress missing iterable value-type on data providers.
+        - identifier: missingType.iterableValue
+          path: tests
+
+        # PHPDoc is prohibited anywhere inside src/Internal/ per architecture rule. TextDecoder's constructor parameter $decoders is intentionally untyped; suppress missing iterable value-type plus cascading errors from iterating the now-mixed array.
+        - identifier: missingType.iterableValue
+          path: src/Internal
+
+        - identifier: method.nonObject
+          path: src/Internal/TextDecoder.php
+
+        - identifier: return.type
+          path: src/Internal/TextDecoder.php
+    reportUnmatchedIgnoredErrors: true

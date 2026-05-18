@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace TinyBlocks\Time;
 
-use TinyBlocks\Time\Internal\Exceptions\InvalidSeconds;
+use TinyBlocks\Time\Exceptions\InvalidSeconds;
 use TinyBlocks\Time\Internal\Seconds;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
@@ -17,9 +17,9 @@ final readonly class Duration implements ValueObject
 {
     use ValueObjectBehavior;
 
-    private const int SECONDS_PER_MINUTE = 60;
-    private const int SECONDS_PER_HOUR = 3600;
     private const int SECONDS_PER_DAY = 86400;
+    private const int SECONDS_PER_HOUR = 3600;
+    private const int SECONDS_PER_MINUTE = 60;
 
     private function __construct(private Seconds $seconds)
     {

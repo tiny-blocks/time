@@ -5,16 +5,12 @@ declare(strict_types=1);
 namespace TinyBlocks\Time\Internal;
 
 use DateTimeImmutable;
+use TinyBlocks\Time\Exceptions\InvalidInstant;
 use TinyBlocks\Time\Internal\Decoders\DatabaseDateTimeDecoder;
-use TinyBlocks\Time\Internal\Decoders\Decoder;
 use TinyBlocks\Time\Internal\Decoders\OffsetDateTimeDecoder;
-use TinyBlocks\Time\Internal\Exceptions\InvalidInstant;
 
 final readonly class TextDecoder
 {
-    /**
-     * @param list<Decoder> $decoders
-     */
     private function __construct(private array $decoders)
     {
     }
@@ -30,10 +26,10 @@ final readonly class TextDecoder
     public function decode(string $value): DateTimeImmutable
     {
         foreach ($this->decoders as $decoder) {
-            $result = $decoder->decode(value: $value);
+            $decoded = $decoder->decode(value: $value);
 
-            if ($result !== null) {
-                return $result;
+            if ($decoded !== null) {
+                return $decoded;
             }
         }
 

@@ -29,7 +29,7 @@ enum DayOfWeek: int
     {
         $isoDay = (int)$instant->toDateTimeImmutable()->format('N');
 
-        return self::from($isoDay);
+        return DayOfWeek::from(value: $isoDay);
     }
 
     /**

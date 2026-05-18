@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Test\TinyBlocks\Time;
+namespace Test\TinyBlocks\Time\Unit;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use TinyBlocks\Time\Internal\Exceptions\InvalidTimezone;
+use TinyBlocks\Time\Exceptions\InvalidTimezone;
 use TinyBlocks\Time\Timezone;
 
 final class TimezoneTest extends TestCase
 {
     public function testTimezoneUtcHasCorrectValue(): void
     {
-        /** @Given a request for the UTC timezone */
         /** @When creating a UTC Timezone */
         $timezone = Timezone::utc();
 

@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace TinyBlocks\Time\Internal;
 
-use TinyBlocks\Time\Internal\Exceptions\InvalidSeconds;
+use TinyBlocks\Time\Exceptions\InvalidSeconds;
 
-/**
- * Represents a non-negative quantity of time in seconds.
- * Internal building block used by Duration and other time types.
- */
 final readonly class Seconds
 {
     private const int ZERO = 0;
