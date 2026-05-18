@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Test\TinyBlocks\Time;
+namespace Test\TinyBlocks\Time\Unit;
 
 use PHPUnit\Framework\TestCase;
-use TinyBlocks\Time\Internal\Exceptions\InvalidTimezone;
+use TinyBlocks\Time\Exceptions\InvalidTimezone;
 use TinyBlocks\Time\Timezone;
 use TinyBlocks\Time\Timezones;
 
@@ -47,8 +47,7 @@ final class TimezonesTest extends TestCase
 
     public function testTimezonesFromStrings(): void
     {
-        /** @Given valid IANA identifier strings */
-        /** @When creating a Timezones collection from strings */
+        /** @When creating a Timezones collection from IANA identifier strings */
         $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Europe/London');
 
         /** @Then the collection should contain all three items */
@@ -60,12 +59,11 @@ final class TimezonesTest extends TestCase
 
     public function testTimezonesFromStringsWithInvalidIdentifier(): void
     {
-        /** @Given a mix of valid and invalid identifier strings */
         /** @Then an InvalidTimezone exception should be thrown */
         $this->expectException(InvalidTimezone::class);
         $this->expectExceptionMessage('Timezone <Invalid/Zone> is invalid.');
 
-        /** @When creating a Timezones collection with the invalid identifier */
+        /** @When creating a Timezones collection with a mix of valid and invalid identifier strings */
         Timezones::fromStrings('UTC', 'Invalid/Zone');
     }
 
@@ -166,14 +164,12 @@ final class TimezonesTest extends TestCase
         $all = $timezones->all();
 
         foreach ($strings as $index => $string) {
-            self::assertIsString($string);
             self::assertSame($all[$index]->value, $string);
         }
     }
 
     public function testTimezonesFromEmptyReturnsEmptyCollection(): void
     {
-        /** @Given no Timezone objects */
         /** @When creating an empty Timezones collection */
         $timezones = Timezones::from();
 

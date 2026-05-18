@@ -5,17 +5,52 @@
 * [Overview](#overview)
 * [Installation](#installation)
 * [How to use](#how-to-use)
-    * [Instant](#instant)
-    * [Duration](#duration)
-    * [Period](#period)
-    * [DayOfWeek](#dayofweek)
-    * [TimeOfDay](#timeofday)
-    * [Timezone](#timezone)
-    * [Timezones](#timezones)
+    + [Instant](#instant)
+        - [Creating from the current moment](#creating-from-the-current-moment)
+        - [Creating from a string](#creating-from-a-string)
+        - [Creating from a database timestamp](#creating-from-a-database-timestamp)
+        - [Creating from Unix seconds](#creating-from-unix-seconds)
+        - [Adding and subtracting time](#adding-and-subtracting-time)
+        - [Measuring distance between instants](#measuring-distance-between-instants)
+        - [Comparing instants](#comparing-instants)
+    + [Duration](#duration)
+        - [Creating durations](#creating-durations)
+        - [Arithmetic](#arithmetic)
+        - [Division](#division)
+        - [Comparing durations](#comparing-durations)
+        - [Converting to other units](#converting-to-other-units)
+    + [Period](#period)
+        - [Creating from two instants](#creating-from-two-instants)
+        - [Creating from a start and duration](#creating-from-a-start-and-duration)
+        - [Getting the duration](#getting-the-duration)
+        - [Checking if an instant is contained](#checking-if-an-instant-is-contained)
+        - [Detecting overlap](#detecting-overlap)
+    + [DayOfWeek](#dayofweek)
+        - [Deriving from an Instant](#deriving-from-an-instant)
+        - [Checking weekday or weekend](#checking-weekday-or-weekend)
+        - [Calculating forward distance](#calculating-forward-distance)
+    + [TimeOfDay](#timeofday)
+        - [Creating from components](#creating-from-components)
+        - [Creating from a string](#creating-from-a-string-1)
+        - [Deriving from an Instant](#deriving-from-an-instant-1)
+        - [Named constructors](#named-constructors)
+        - [Comparing times](#comparing-times)
+        - [Measuring distance between times](#measuring-distance-between-times)
+        - [Converting to other representations](#converting-to-other-representations)
+    + [Timezone](#timezone)
+        - [Creating from an identifier](#creating-from-an-identifier)
+        - [Creating a UTC timezone](#creating-a-utc-timezone)
+        - [Converting to DateTimeZone](#converting-to-datetimezone)
+    + [Timezones](#timezones)
+        - [Creating from objects](#creating-from-objects)
+        - [Creating from strings](#creating-from-strings)
+        - [Getting all timezones](#getting-all-timezones)
+        - [Finding a timezone by identifier](#finding-a-timezone-by-identifier)
+        - [Finding a timezone by identifier with UTC fallback](#finding-a-timezone-by-identifier-with-utc-fallback)
+        - [Checking if a timezone exists in the collection](#checking-if-a-timezone-exists-in-the-collection)
+        - [Getting all identifiers as strings](#getting-all-identifiers-as-strings)
 * [License](#license)
 * [Contributing](#contributing)
-
-<div id='overview'></div>
 
 ## Overview
 
@@ -24,19 +59,15 @@ day-of-week. All instants are normalized to UTC with microsecond precision, with
 arithmetic operations. Declared as `final readonly class` for language-level immutability, with structural equality
 provided by the tiny-blocks value-object contract.
 
-<div id='installation'></div>
-
 ## Installation
 
 ```bash
 composer require tiny-blocks/time
 ```
 
-<div id='how-to-use'></div>
-
 ## How to use
 
-The library provides immutable Value Objects for representing points in time, quantities of time and time intervals.
+The library provides immutable value objects for representing points in time, quantities of time, and time intervals.
 All instants are normalized to UTC internally.
 
 ### Instant
@@ -48,6 +79,10 @@ An `Instant` represents a single point on the timeline, always stored in UTC wit
 Captures the current moment with microsecond precision, normalized to UTC.
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 
 $instant = Instant::now();
@@ -62,6 +97,10 @@ $instant->toDateTimeImmutable();  # DateTimeImmutable (UTC, with microseconds)
 Parses a date-time string with an explicit UTC offset. The value is normalized to UTC regardless of the original offset.
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 
 $instant = Instant::fromString(value: '2026-02-17T13:30:00-03:00');
@@ -76,6 +115,10 @@ Parses a database date-time string as UTC, with or without microsecond precision
 or `DATETIME(6)`).
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 
 $instant = Instant::fromString(value: '2026-02-17 08:27:21.106011');
@@ -87,6 +130,10 @@ $instant->toDateTimeImmutable()->format('Y-m-d H:i:s.u'); # 2026-02-17 08:27:21.
 Also supports timestamps without fractional seconds:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 
 $instant = Instant::fromString(value: '2026-02-17 08:27:21');
@@ -99,6 +146,10 @@ $instant->toIso8601(); # 2026-02-17T08:27:21+00:00
 Creates an `Instant` from a Unix timestamp in seconds.
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 
 $instant = Instant::fromUnixSeconds(seconds: 0);
@@ -112,8 +163,12 @@ $instant->toUnixSeconds(); # 0
 Returns a new `Instant` shifted forward or backward by a `Duration`.
 
 ```php
-use TinyBlocks\Time\Instant;
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
+use TinyBlocks\Time\Instant;
 
 $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
@@ -127,6 +182,10 @@ $instant->minus(duration: Duration::fromSeconds(seconds: 60))->toIso8601(); # 20
 Returns the absolute `Duration` between two `Instant` objects.
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 
 $start = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
@@ -150,6 +209,10 @@ $end->durationUntil(other: $start)->toSeconds(); # 5400
 Provides strict temporal ordering between two `Instant` instances.
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 
 $earlier = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
@@ -166,11 +229,15 @@ $later->isAfterOrEqual(other: $earlier);   # true
 ### Duration
 
 A `Duration` represents an immutable, unsigned quantity of time measured in seconds. It has no reference point on the
-timeline — it expresses only "how much" time.
+timeline. It expresses only "how much" time.
 
 #### Creating durations
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
 
 $zero    = Duration::zero();
@@ -189,6 +256,10 @@ Duration::fromMinutes(minutes: -5); # throws InvalidSeconds
 #### Arithmetic
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
 
 $thirtyMinutes = Duration::fromMinutes(minutes: 30);
@@ -209,6 +280,10 @@ $fifteenMinutes->minus(other: $thirtyMinutes); # throws InvalidSeconds
 Returns the number of times one `Duration` fits wholly into another. The result is truncated toward zero:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
 
 $total = Duration::fromMinutes(minutes: 90);
@@ -226,6 +301,10 @@ $total->divide(other: Duration::zero()); # throws InvalidSeconds
 #### Comparing durations
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
 
 $short = Duration::fromMinutes(minutes: 15);
@@ -242,6 +321,10 @@ Duration::zero()->isZero();          # true
 Conversions truncate toward zero when the duration is not an exact multiple:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
 
 $duration = Duration::fromSeconds(seconds: 5400);
@@ -260,6 +343,10 @@ end is exclusive.
 #### Creating from two instants
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Period;
 
@@ -281,6 +368,10 @@ Period::from(from: $later, to: $earlier); # throws InvalidPeriod
 #### Creating from a start and duration
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Period;
@@ -306,6 +397,10 @@ $period->duration()->toMinutes(); # 90
 The check is inclusive at the start and exclusive at the end:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 
 $period->contains(instant: Instant::fromString(value: '2026-02-17T10:00:00+00:00')); # true (start, inclusive)
@@ -318,6 +413,10 @@ $period->contains(instant: Instant::fromString(value: '2026-02-17T11:30:00+00:00
 Two half-open intervals `[A, B)` and `[C, D)` overlap when `A < D` and `C < B`:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Period;
@@ -338,6 +437,10 @@ $periodB->overlapsWith(other: $periodA); # true
 Adjacent periods do not overlap:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Duration;
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Period;
@@ -361,6 +464,10 @@ A `DayOfWeek` represents a day of the week following ISO 8601, where Monday is 1
 #### Deriving from an Instant
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\DayOfWeek;
 use TinyBlocks\Time\Instant;
 
@@ -374,6 +481,10 @@ $day->value; # 2
 #### Checking weekday or weekend
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\DayOfWeek;
 
 DayOfWeek::Monday->isWeekday();   # true
@@ -388,6 +499,10 @@ Returns the number of days forward from one day to another, always in the range 
 forward through the week:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\DayOfWeek;
 
 DayOfWeek::Monday->distanceTo(other: DayOfWeek::Wednesday); # 2
@@ -403,6 +518,10 @@ A `TimeOfDay` represents a time of day (hour and minute) without date or timezon
 #### Creating from components
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\TimeOfDay;
 
 $time = TimeOfDay::from(hour: 8, minute: 30);
@@ -416,6 +535,10 @@ $time->minute; # 30
 Parses a string in `HH:MM` or `HH:MM:SS` format. When seconds are present, they are discarded:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\TimeOfDay;
 
 $time = TimeOfDay::fromString(value: '14:30');
@@ -427,6 +550,10 @@ $time->minute; # 30
 Also accepts the `HH:MM:SS` format commonly returned by databases:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\TimeOfDay;
 
 $time = TimeOfDay::fromString(value: '08:30:00');
@@ -441,6 +568,10 @@ $time->toString(); # 08:30
 Extracts the time of day from an `Instant` in UTC:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\TimeOfDay;
 
@@ -454,6 +585,10 @@ $time->minute; # 30
 #### Named constructors
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\TimeOfDay;
 
 $midnight = TimeOfDay::midnight(); # 00:00
@@ -463,6 +598,10 @@ $noon = TimeOfDay::noon();         # 12:00
 #### Comparing times
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\TimeOfDay;
 
 $morning = TimeOfDay::from(hour: 8, minute: 0);
@@ -479,6 +618,10 @@ $afternoon->isAfterOrEqual(other: $morning);  # true
 Returns the `Duration` between two times. The second time must be after the first:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\TimeOfDay;
 
 $start = TimeOfDay::from(hour: 8, minute: 0);
@@ -492,6 +635,10 @@ $duration->toMinutes(); # 270
 #### Converting to other representations
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\TimeOfDay;
 
 $time = TimeOfDay::from(hour: 8, minute: 30);
@@ -503,11 +650,15 @@ $time->toString();                # 08:30
 
 ### Timezone
 
-A `Timezone` is a Value Object representing a single valid [IANA timezone](https://www.iana.org) identifier.
+A `Timezone` is a value object representing a single valid [IANA timezone](https://www.iana.org) identifier.
 
 #### Creating from an identifier
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezone;
 
 $timezone = Timezone::from(identifier: 'America/Sao_Paulo');
@@ -519,6 +670,10 @@ $timezone->toString(); # America/Sao_Paulo
 #### Creating a UTC timezone
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezone;
 
 $timezone = Timezone::utc();
@@ -529,6 +684,10 @@ $timezone->value; # UTC
 #### Converting to DateTimeZone
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezone;
 
 $timezone = Timezone::from(identifier: 'Asia/Tokyo');
@@ -544,6 +703,10 @@ An immutable collection of `Timezone` objects.
 #### Creating from objects
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezone;
 use TinyBlocks\Time\Timezones;
 
@@ -559,6 +722,10 @@ $timezones->count(); # 3
 #### Creating from strings
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezones;
 
 $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Europe/London');
@@ -580,6 +747,10 @@ $timezones->all(); # [Timezone("UTC"), Timezone("America/Sao_Paulo"), Timezone("
 Searches for a specific IANA identifier within the collection. Returns `null` if not found.
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezones;
 
 $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo');
@@ -593,6 +764,10 @@ $timezones->findByIdentifier(iana: 'Europe/London'); # null
 Searches for a specific IANA identifier within the collection. Returns UTC if not found.
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezones;
 
 $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo');
@@ -604,6 +779,10 @@ $timezones->findByIdentifierOrUtc(iana: 'Europe/London'); # Timezone("UTC")
 #### Checking if a timezone exists in the collection
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezones;
 
 $timezones = Timezones::fromStrings('America/Sao_Paulo', 'Asia/Tokyo');
@@ -617,6 +796,10 @@ $timezones->contains(iana: 'America/New_York'); # false
 Returns all timezone identifiers as plain strings:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use TinyBlocks\Time\Timezones;
 
 $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Europe/London');
@@ -624,13 +807,9 @@ $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Europe/London')
 $timezones->toStrings(); # ["UTC", "America/Sao_Paulo", "Europe/London"]
 ```
 
-<div id='license'></div>
-
 ## License
 
 Time is licensed under [MIT](LICENSE).
-
-<div id='contributing'></div>
 
 ## Contributing
 

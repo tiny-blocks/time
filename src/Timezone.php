@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace TinyBlocks\Time;
 
 use DateTimeZone;
-use TinyBlocks\Time\Internal\Exceptions\InvalidTimezone;
+use TinyBlocks\Time\Exceptions\InvalidTimezone;
 
 /**
  * Represents a single IANA timezone identifier (e.g. America/Sao_Paulo).
@@ -16,7 +16,7 @@ final readonly class Timezone
 
     private function __construct(string $identifier)
     {
-        if (empty($identifier) || !in_array($identifier, DateTimeZone::listIdentifiers(), true)) {
+        if ($identifier === '' || !in_array($identifier, DateTimeZone::listIdentifiers(), true)) {
             throw new InvalidTimezone(identifier: $identifier);
         }
 
@@ -62,6 +62,6 @@ final readonly class Timezone
      */
     public function toDateTimeZone(): DateTimeZone
     {
-        return new DateTimeZone($this->value);
+        return new DateTimeZone(timezone: $this->value);
     }
 }

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Test\TinyBlocks\Time;
+namespace Test\TinyBlocks\Time\Unit;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\Duration;
 use TinyBlocks\Time\Instant;
-use TinyBlocks\Time\Internal\Exceptions\InvalidInstant;
+use TinyBlocks\Time\Exceptions\InvalidInstant;
 
 final class InstantTest extends TestCase
 {

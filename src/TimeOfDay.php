@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace TinyBlocks\Time;
 
-use TinyBlocks\Time\Internal\Exceptions\InvalidTimeOfDay;
+use TinyBlocks\Time\Exceptions\InvalidTimeOfDay;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
 
@@ -190,6 +190,8 @@ final readonly class TimeOfDay implements ValueObject
      */
     public function toString(): string
     {
-        return sprintf('%02d:%02d', $this->hour, $this->minute);
+        $template = '%02d:%02d';
+
+        return sprintf($template, $this->hour, $this->minute);
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace TinyBlocks\Time;
 
-use TinyBlocks\Time\Internal\Exceptions\InvalidPeriod;
+use TinyBlocks\Time\Exceptions\InvalidPeriod;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
 

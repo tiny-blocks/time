@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Test\TinyBlocks\Time;
+namespace Test\TinyBlocks\Time\Unit;
 
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\Duration;
 use TinyBlocks\Time\Instant;
-use TinyBlocks\Time\Internal\Exceptions\InvalidPeriod;
+use TinyBlocks\Time\Exceptions\InvalidPeriod;
 use TinyBlocks\Time\Period;
 
 final class PeriodTest extends TestCase

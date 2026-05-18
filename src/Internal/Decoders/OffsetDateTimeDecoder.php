@@ -24,6 +24,6 @@ final readonly class OffsetDateTimeDecoder implements Decoder
             return null;
         }
 
-        return $parsed->setTimezone(new DateTimeZone('UTC'));
+        return $parsed->setTimezone(new DateTimeZone(timezone: 'UTC'));
     }
 }

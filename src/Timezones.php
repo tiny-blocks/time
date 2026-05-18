@@ -5,19 +5,15 @@ declare(strict_types=1);
 namespace TinyBlocks\Time;
 
 use Countable;
-use TinyBlocks\Time\Internal\Exceptions\InvalidTimezone;
+use TinyBlocks\Time\Exceptions\InvalidTimezone;
 
 /**
  * Immutable collection of Timezone objects.
  */
 final readonly class Timezones implements Countable
 {
-    /** @var list<Timezone> */
     private array $items;
 
-    /**
-     * @param list<Timezone> $items
-     */
     private function __construct(array $items)
     {
         $this->items = $items;
