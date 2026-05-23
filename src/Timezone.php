@@ -46,7 +46,7 @@ final readonly class Timezone
     }
 
     /**
-     * Returns the IANA timezone identifier as a string.
+     * Returns the Timezone as a string.
      *
      * @return string The IANA timezone identifier.
      */
@@ -56,7 +56,7 @@ final readonly class Timezone
     }
 
     /**
-     * Converts this Timezone to a DateTimeZone instance.
+     * Returns the Timezone as a DateTimeZone.
      *
      * @return DateTimeZone The corresponding DateTimeZone.
      */

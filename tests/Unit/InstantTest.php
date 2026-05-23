@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\Duration;
 use TinyBlocks\Time\Instant;
+use TinyBlocks\Time\Precision;
 use TinyBlocks\Time\Exceptions\InvalidInstant;
 
 final class InstantTest extends TestCase
@@ -64,10 +65,8 @@ final class InstantTest extends TestCase
 
     public function testInstantNowProducesDistinctInstances(): void
     {
-        /** @Given an Instant created from now */
+        /** @When invoked twice in rapid succession */
         $first = Instant::now();
-
-        /** @And a second Instant created immediately after */
         $second = Instant::now();
 
         /** @Then both should be valid Instants in UTC */
@@ -496,8 +495,10 @@ final class InstantTest extends TestCase
         /** @And another Instant at the same moment */
         $same = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
-        /** @Then the duration between them should be zero */
+        /** @When measuring the duration between them */
         $duration = $instant->durationUntil(other: $same);
+
+        /** @Then the duration between them should be zero */
         self::assertSame(0, $duration->toSeconds());
         self::assertTrue($duration->isZero());
     }
@@ -730,6 +731,142 @@ final class InstantTest extends TestCase
         self::assertTrue($fromString->isAfterOrEqual(other: $fromUnix));
     }
 
+    #[DataProvider('precisionDataProvider')]
+    public function testToIso8601WithPrecision(
+        string $value,
+        Precision $precision,
+        string $expectedIso8601
+    ): void {
+        /** @Given an Instant created from the string */
+        $instant = Instant::fromString(value: $value);
+
+        /** @When formatting with the given precision */
+        $iso = $instant->toIso8601(precision: $precision);
+
+        /** @Then the output should match the expected ISO 8601 string */
+        self::assertSame($expectedIso8601, $iso);
+    }
+
+    public function testToIso8601MicrosecondsRoundTrip(): void
+    {
+        /** @Given an Instant parsed from an ISO 8601 string with microseconds */
+        $instant = Instant::fromString(value: '2026-02-17T10:30:00.123456+00:00');
+
+        /** @When formatting with microsecond precision */
+        $iso = $instant->toIso8601(precision: Precision::Microseconds);
+
+        /** @Then the output should be byte-identical to the original fractional string */
+        self::assertSame('2026-02-17T10:30:00.123456+00:00', $iso);
+    }
+
+    public function testToIso8601MillisecondsRoundTrip(): void
+    {
+        /** @Given an Instant parsed from an ISO 8601 string with microseconds */
+        $instant = Instant::fromString(value: '2026-02-17T10:30:00.123456+00:00');
+
+        /** @When formatting with millisecond precision */
+        $iso = $instant->toIso8601(precision: Precision::Milliseconds);
+
+        /** @Then the output should truncate to three fractional digits */
+        self::assertSame('2026-02-17T10:30:00.123+00:00', $iso);
+    }
+
+    public function testToIso8601DefaultPrecisionIsSeconds(): void
+    {
+        /** @Given an Instant created from a database string with microseconds */
+        $instant = Instant::fromString(value: '2026-02-17 08:27:21.106011');
+
+        /** @When formatting without specifying a precision */
+        $iso = $instant->toIso8601();
+
+        /** @Then the output should match the seconds-only format */
+        self::assertSame('2026-02-17T08:27:21+00:00', $iso);
+    }
+
+    public function testToIso8601WithMicrosecondsPrecision(): void
+    {
+        /** @Given an Instant created from a database string with known microseconds */
+        $instant = Instant::fromString(value: '2026-02-17 08:27:21.106011');
+
+        /** @When formatting with microsecond precision */
+        $iso = $instant->toIso8601(precision: Precision::Microseconds);
+
+        /** @Then the output should include all six fractional digits */
+        self::assertSame('2026-02-17T08:27:21.106011+00:00', $iso);
+    }
+
+    public function testToIso8601WithMillisecondsPrecision(): void
+    {
+        /** @Given an Instant created from a database string with known microseconds */
+        $instant = Instant::fromString(value: '2026-02-17 08:27:21.106011');
+
+        /** @When formatting with millisecond precision */
+        $iso = $instant->toIso8601(precision: Precision::Milliseconds);
+
+        /** @Then the output should include exactly three fractional digits */
+        self::assertSame('2026-02-17T08:27:21.106+00:00', $iso);
+    }
+
+    public function testToIso8601MicrosecondsPrecisionZeroMicros(): void
+    {
+        /** @Given an Instant created from Unix seconds (no sub-second precision) */
+        $instant = Instant::fromUnixSeconds(seconds: 1771324200);
+
+        /** @When formatting with microsecond precision */
+        $iso = $instant->toIso8601(precision: Precision::Microseconds);
+
+        /** @Then the output should contain six zero fractional digits */
+        self::assertSame('2026-02-17T10:30:00.000000+00:00', $iso);
+    }
+
+    public function testToIso8601MillisecondsPrecisionZeroMicros(): void
+    {
+        /** @Given an Instant created from Unix seconds (no sub-second precision) */
+        $instant = Instant::fromUnixSeconds(seconds: 1771324200);
+
+        /** @When formatting with millisecond precision */
+        $iso = $instant->toIso8601(precision: Precision::Milliseconds);
+
+        /** @Then the output should contain three zero fractional digits */
+        self::assertSame('2026-02-17T10:30:00.000+00:00', $iso);
+    }
+
+    public function testFromStringIso8601WithFractionalSecondsIsInUtc(): void
+    {
+        /** @Given an ISO 8601 string with microseconds and a UTC offset */
+        $instant = Instant::fromString(value: '2026-05-23T12:55:10.272097+00:00');
+
+        /** @When converting to DateTimeImmutable */
+        $dateTime = $instant->toDateTimeImmutable();
+
+        /** @Then the timezone should be UTC */
+        self::assertSame('UTC', $dateTime->getTimezone()->getName());
+    }
+
+    public function testFromStringIso8601WithFractionalSecondsNormalizesOffset(): void
+    {
+        /** @Given an ISO 8601 string with microseconds and a non-UTC offset */
+        $instant = Instant::fromString(value: '2026-02-17T13:30:00.500000-03:00');
+
+        /** @When formatting as ISO 8601 */
+        $iso = $instant->toIso8601();
+
+        /** @Then the output should be normalized to UTC without fractions */
+        self::assertSame('2026-02-17T16:30:00+00:00', $iso);
+    }
+
+    public function testFromStringIso8601WithFractionalSecondsPreservesMicroseconds(): void
+    {
+        /** @Given an ISO 8601 string with full microsecond precision */
+        $instant = Instant::fromString(value: '2026-05-23T12:55:10.272097+00:00');
+
+        /** @When accessing the underlying DateTimeImmutable */
+        $dateTime = $instant->toDateTimeImmutable();
+
+        /** @Then the microseconds should be preserved */
+        self::assertSame('272097', $dateTime->format('u'));
+    }
+
     public static function validStringsDataProvider(): array
     {
         return [
@@ -770,6 +907,21 @@ final class InstantTest extends TestCase
             ],
             'Negative offset -09:30' => [
                 'value'               => '2026-02-17T01:00:00-09:30',
+                'expectedIso8601'     => '2026-02-17T10:30:00+00:00',
+                'expectedUnixSeconds' => 1771324200
+            ],
+            'UTC offset with microseconds'           => [
+                'value'               => '2026-02-17T10:30:00.123456+00:00',
+                'expectedIso8601'     => '2026-02-17T10:30:00+00:00',
+                'expectedUnixSeconds' => 1771324200
+            ],
+            'UTC offset with short fraction'         => [
+                'value'               => '2026-02-17T10:30:00.272+00:00',
+                'expectedIso8601'     => '2026-02-17T10:30:00+00:00',
+                'expectedUnixSeconds' => 1771324200
+            ],
+            'Positive offset with microseconds'      => [
+                'value'               => '2026-02-17T16:00:00.500000+05:30',
                 'expectedIso8601'     => '2026-02-17T10:30:00+00:00',
                 'expectedUnixSeconds' => 1771324200
             ]
@@ -820,11 +972,12 @@ final class InstantTest extends TestCase
             'Slash-separated date'               => ['value' => '2026/02/17T10:30:00+00:00'],
             'Missing time separator'             => ['value' => '2026-02-17 10:30:00+00:00'],
             'Z suffix instead offset'            => ['value' => '2026-02-17T10:30:00Z'],
-            'With fractional seconds'            => ['value' => '2026-02-17T10:30:00.123456+00:00'],
             'Unix timestamp as string'           => ['value' => '1771324200'],
-            'Database format with invalid day'   => ['value' => '2026-02-30 08:27:21.106011'],
-            'Database format with T separator'   => ['value' => '2026-02-17T08:27:21.106011'],
-            'Database format with invalid month' => ['value' => '2026-13-17 08:27:21.106011']
+            'Database format with invalid day'               => ['value' => '2026-02-30 08:27:21.106011'],
+            'Database format with T separator'               => ['value' => '2026-02-17T08:27:21.106011'],
+            'Database format with invalid month'             => ['value' => '2026-13-17 08:27:21.106011'],
+            'Fractional ISO 8601 with invalid day'           => ['value' => '2026-02-30T10:30:00.000000+00:00'],
+            'Fractional ISO 8601 with invalid month'         => ['value' => '2026-13-17T10:30:00.123456+00:00']
         ];
     }
 
@@ -858,6 +1011,42 @@ final class InstantTest extends TestCase
             'Midnight without microseconds' => [
                 'value'           => '2026-01-01 00:00:00',
                 'expectedIso8601' => '2026-01-01T00:00:00+00:00'
+            ]
+        ];
+    }
+
+    public static function precisionDataProvider(): array
+    {
+        return [
+            'Seconds precision, no fractions emitted'                 => [
+                'value'           => '2026-02-17 08:27:21.106011',
+                'precision'       => Precision::Seconds,
+                'expectedIso8601' => '2026-02-17T08:27:21+00:00'
+            ],
+            'Microseconds precision, six-digit fraction'              => [
+                'value'           => '2026-02-17 08:27:21.106011',
+                'precision'       => Precision::Microseconds,
+                'expectedIso8601' => '2026-02-17T08:27:21.106011+00:00'
+            ],
+            'Milliseconds precision, three-digit fraction'            => [
+                'value'           => '2026-02-17 08:27:21.106011',
+                'precision'       => Precision::Milliseconds,
+                'expectedIso8601' => '2026-02-17T08:27:21.106+00:00'
+            ],
+            'Microseconds precision, three-digit input zero-padded'   => [
+                'value'           => '2026-02-17T10:30:00.272+00:00',
+                'precision'       => Precision::Microseconds,
+                'expectedIso8601' => '2026-02-17T10:30:00.272000+00:00'
+            ],
+            'Milliseconds precision, three-digit input round-trips'   => [
+                'value'           => '2026-02-17T10:30:00.272+00:00',
+                'precision'       => Precision::Milliseconds,
+                'expectedIso8601' => '2026-02-17T10:30:00.272+00:00'
+            ],
+            'Seconds precision strips fractions from ISO 8601 input'  => [
+                'value'           => '2026-02-17T10:30:00.123456+00:00',
+                'precision'       => Precision::Seconds,
+                'expectedIso8601' => '2026-02-17T10:30:00+00:00'
             ]
         ];
     }

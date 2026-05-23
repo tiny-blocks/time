@@ -13,31 +13,37 @@ final class TimeOfDayTest extends TestCase
 {
     public function testTimeOfDayFromCreatesValidTimeOfDay(): void
     {
-        /** @Given valid hour and minute */
+        /** @When creating a TimeOfDay with hour 8 and minute 30 */
         $time = TimeOfDay::from(hour: 8, minute: 30);
 
-        /** @Then the components should match */
+        /** @Then the hour should be 8 */
         self::assertSame(8, $time->hour);
+
+        /** @And the minute should be 30 */
         self::assertSame(30, $time->minute);
     }
 
     public function testTimeOfDayFromWithZeros(): void
     {
-        /** @Given hour 0 and minute 0 */
+        /** @When creating a TimeOfDay with hour 0 and minute 0 */
         $time = TimeOfDay::from(hour: 0, minute: 0);
 
-        /** @Then it should be midnight */
+        /** @Then the hour should be 0 */
         self::assertSame(0, $time->hour);
+
+        /** @And the minute should be 0 */
         self::assertSame(0, $time->minute);
     }
 
     public function testTimeOfDayFromWithMaxValues(): void
     {
-        /** @Given maximum valid hour and minute */
+        /** @When creating a TimeOfDay with hour 23 and minute 59 */
         $time = TimeOfDay::from(hour: 23, minute: 59);
 
-        /** @Then the components should match */
+        /** @Then the hour should be 23 */
         self::assertSame(23, $time->hour);
+
+        /** @And the minute should be 59 */
         self::assertSame(59, $time->minute);
     }
 
@@ -79,23 +85,31 @@ final class TimeOfDayTest extends TestCase
 
     public function testTimeOfDayMidnight(): void
     {
-        /** @Given midnight */
+        /** @When creating the midnight TimeOfDay */
         $time = TimeOfDay::midnight();
 
-        /** @Then it should be 00:00 */
+        /** @Then the hour should be 0 */
         self::assertSame(0, $time->hour);
+
+        /** @And the minute should be 0 */
         self::assertSame(0, $time->minute);
+
+        /** @And the string representation should be '00:00' */
         self::assertSame('00:00', $time->toString());
     }
 
     public function testTimeOfDayNoon(): void
     {
-        /** @Given noon */
+        /** @When creating the noon TimeOfDay */
         $time = TimeOfDay::noon();
 
-        /** @Then it should be 12:00 */
+        /** @Then the hour should be 12 */
         self::assertSame(12, $time->hour);
+
+        /** @And the minute should be 0 */
         self::assertSame(0, $time->minute);
+
+        /** @And the string representation should be '12:00' */
         self::assertSame('12:00', $time->toString());
     }
 
@@ -107,8 +121,10 @@ final class TimeOfDayTest extends TestCase
         /** @When extracting the time of day */
         $time = TimeOfDay::fromInstant(instant: $instant);
 
-        /** @Then the components should match */
+        /** @Then the hour should be 14 */
         self::assertSame(14, $time->hour);
+
+        /** @And the minute should be 30 */
         self::assertSame(30, $time->minute);
     }
 
@@ -120,8 +136,10 @@ final class TimeOfDayTest extends TestCase
         /** @When extracting the time of day */
         $time = TimeOfDay::fromInstant(instant: $instant);
 
-        /** @Then it should be midnight */
+        /** @Then the hour should be 0 */
         self::assertSame(0, $time->hour);
+
+        /** @And the minute should be 0 */
         self::assertSame(0, $time->minute);
     }
 
@@ -133,38 +151,46 @@ final class TimeOfDayTest extends TestCase
         /** @When extracting the time of day */
         $time = TimeOfDay::fromInstant(instant: $instant);
 
-        /** @Then it should be 23:59 */
+        /** @Then the hour should be 23 */
         self::assertSame(23, $time->hour);
+
+        /** @And the minute should be 59 */
         self::assertSame(59, $time->minute);
     }
 
     public function testTimeOfDayFromStringValid(): void
     {
-        /** @Given a valid time string */
+        /** @When creating a TimeOfDay from the string '08:30' */
         $time = TimeOfDay::fromString(value: '08:30');
 
-        /** @Then the components should match */
+        /** @Then the hour should be 8 */
         self::assertSame(8, $time->hour);
+
+        /** @And the minute should be 30 */
         self::assertSame(30, $time->minute);
     }
 
     public function testTimeOfDayFromStringMidnight(): void
     {
-        /** @Given midnight as string */
+        /** @When creating a TimeOfDay from the string '00:00' */
         $time = TimeOfDay::fromString(value: '00:00');
 
-        /** @Then it should be midnight */
+        /** @Then the hour should be 0 */
         self::assertSame(0, $time->hour);
+
+        /** @And the minute should be 0 */
         self::assertSame(0, $time->minute);
     }
 
     public function testTimeOfDayFromStringEndOfDay(): void
     {
-        /** @Given end of day as string */
+        /** @When creating a TimeOfDay from the string '23:59' */
         $time = TimeOfDay::fromString(value: '23:59');
 
-        /** @Then it should be 23:59 */
+        /** @Then the hour should be 23 */
         self::assertSame(23, $time->hour);
+
+        /** @And the minute should be 59 */
         self::assertSame(59, $time->minute);
     }
 
@@ -188,12 +214,16 @@ final class TimeOfDayTest extends TestCase
 
     public function testTimeOfDayFromStringWhenHasSeconds(): void
     {
-        /** @Given a time string with seconds */
+        /** @When creating a TimeOfDay from the string '08:30:00' */
         $time = TimeOfDay::fromString(value: '08:30:00');
 
-        /** @Then the seconds should be discarded and the components should match */
+        /** @Then the hour should be 8 */
         self::assertSame(8, $time->hour);
+
+        /** @And the minute should be 30 */
         self::assertSame(30, $time->minute);
+
+        /** @And the string representation should discard seconds */
         self::assertSame('08:30', $time->toString());
     }
 
@@ -220,8 +250,11 @@ final class TimeOfDayTest extends TestCase
         /** @Given midnight */
         $time = TimeOfDay::midnight();
 
+        /** @When converting to minutes since midnight */
+        $minutes = $time->toMinutesSinceMidnight();
+
         /** @Then minutes since midnight should be 0 */
-        self::assertSame(0, $time->toMinutesSinceMidnight());
+        self::assertSame(0, $minutes);
     }
 
     public function testTimeOfDayToMinutesSinceMidnightAtNoon(): void
@@ -229,8 +262,11 @@ final class TimeOfDayTest extends TestCase
         /** @Given noon */
         $time = TimeOfDay::noon();
 
+        /** @When converting to minutes since midnight */
+        $minutes = $time->toMinutesSinceMidnight();
+
         /** @Then minutes since midnight should be 720 */
-        self::assertSame(720, $time->toMinutesSinceMidnight());
+        self::assertSame(720, $minutes);
     }
 
     public function testTimeOfDayToMinutesSinceMidnightAt0830(): void
@@ -238,8 +274,11 @@ final class TimeOfDayTest extends TestCase
         /** @Given 08:30 */
         $time = TimeOfDay::from(hour: 8, minute: 30);
 
+        /** @When converting to minutes since midnight */
+        $minutes = $time->toMinutesSinceMidnight();
+
         /** @Then minutes since midnight should be 510 */
-        self::assertSame(510, $time->toMinutesSinceMidnight());
+        self::assertSame(510, $minutes);
     }
 
     public function testTimeOfDayToMinutesSinceMidnightAtEndOfDay(): void
@@ -247,8 +286,11 @@ final class TimeOfDayTest extends TestCase
         /** @Given 23:59 */
         $time = TimeOfDay::from(hour: 23, minute: 59);
 
+        /** @When converting to minutes since midnight */
+        $minutes = $time->toMinutesSinceMidnight();
+
         /** @Then minutes since midnight should be 1439 */
-        self::assertSame(1439, $time->toMinutesSinceMidnight());
+        self::assertSame(1439, $minutes);
     }
 
     public function testTimeOfDayToDuration(): void
@@ -259,8 +301,10 @@ final class TimeOfDayTest extends TestCase
         /** @When converting to Duration */
         $duration = $time->toDuration();
 
-        /** @Then the duration should be 510 minutes in seconds */
+        /** @Then the duration should be 510 minutes */
         self::assertSame(510, $duration->toMinutes());
+
+        /** @And 30600 seconds */
         self::assertSame(30600, $duration->toSeconds());
     }
 
@@ -284,8 +328,11 @@ final class TimeOfDayTest extends TestCase
         /** @And a later time */
         $later = TimeOfDay::from(hour: 14, minute: 30);
 
+        /** @When checking if the earlier time is before the later */
+        $result = $earlier->isBefore(other: $later);
+
         /** @Then the earlier should be before the later */
-        self::assertTrue($earlier->isBefore(other: $later));
+        self::assertTrue($result);
     }
 
     public function testTimeOfDayIsBeforeReturnsFalseWhenLater(): void
@@ -296,8 +343,11 @@ final class TimeOfDayTest extends TestCase
         /** @And an earlier time */
         $earlier = TimeOfDay::from(hour: 8, minute: 0);
 
+        /** @When checking if the later time is before the earlier */
+        $result = $later->isBefore(other: $earlier);
+
         /** @Then the later should not be before the earlier */
-        self::assertFalse($later->isBefore(other: $earlier));
+        self::assertFalse($result);
     }
 
     public function testTimeOfDayIsBeforeReturnsFalseWhenEqual(): void
@@ -308,8 +358,11 @@ final class TimeOfDayTest extends TestCase
         /** @And the same time */
         $same = TimeOfDay::from(hour: 10, minute: 0);
 
+        /** @When checking if the time is before itself */
+        $result = $time->isBefore(other: $same);
+
         /** @Then isBefore should return false */
-        self::assertFalse($time->isBefore(other: $same));
+        self::assertFalse($result);
     }
 
     public function testTimeOfDayIsAfterReturnsTrueWhenLater(): void
@@ -320,8 +373,11 @@ final class TimeOfDayTest extends TestCase
         /** @And an earlier time */
         $earlier = TimeOfDay::from(hour: 8, minute: 0);
 
+        /** @When checking if the later time is after the earlier */
+        $result = $later->isAfter(other: $earlier);
+
         /** @Then the later should be after the earlier */
-        self::assertTrue($later->isAfter(other: $earlier));
+        self::assertTrue($result);
     }
 
     public function testTimeOfDayIsAfterReturnsFalseWhenEqual(): void
@@ -332,8 +388,11 @@ final class TimeOfDayTest extends TestCase
         /** @And the same time */
         $same = TimeOfDay::from(hour: 10, minute: 0);
 
+        /** @When checking if the time is after itself */
+        $result = $time->isAfter(other: $same);
+
         /** @Then isAfter should return false */
-        self::assertFalse($time->isAfter(other: $same));
+        self::assertFalse($result);
     }
 
     public function testTimeOfDayIsBeforeOrEqualReturnsTrueWhenEqual(): void
@@ -344,8 +403,11 @@ final class TimeOfDayTest extends TestCase
         /** @And the same time */
         $same = TimeOfDay::from(hour: 10, minute: 0);
 
+        /** @When checking if the time is before or equal to itself */
+        $result = $time->isBeforeOrEqual(other: $same);
+
         /** @Then isBeforeOrEqual should return true */
-        self::assertTrue($time->isBeforeOrEqual(other: $same));
+        self::assertTrue($result);
     }
 
     public function testTimeOfDayIsAfterOrEqualReturnsTrueWhenEqual(): void
@@ -356,8 +418,11 @@ final class TimeOfDayTest extends TestCase
         /** @And the same time */
         $same = TimeOfDay::from(hour: 10, minute: 0);
 
+        /** @When checking if the time is after or equal to itself */
+        $result = $time->isAfterOrEqual(other: $same);
+
         /** @Then isAfterOrEqual should return true */
-        self::assertTrue($time->isAfterOrEqual(other: $same));
+        self::assertTrue($result);
     }
 
     public function testTimeOfDayIsBeforeAndIsAfterAreMutuallyExclusive(): void
@@ -368,10 +433,19 @@ final class TimeOfDayTest extends TestCase
         /** @And a later time */
         $later = TimeOfDay::from(hour: 18, minute: 0);
 
-        /** @Then isBefore and isAfter should be mutually exclusive */
-        self::assertTrue($earlier->isBefore(other: $later));
+        /** @When checking if the earlier is before the later */
+        $earlierIsBefore = $earlier->isBefore(other: $later);
+
+        /** @Then earlier should be before later */
+        self::assertTrue($earlierIsBefore);
+
+        /** @And earlier should not be after later */
         self::assertFalse($earlier->isAfter(other: $later));
+
+        /** @And later should be after earlier */
         self::assertTrue($later->isAfter(other: $earlier));
+
+        /** @And later should not be before earlier */
         self::assertFalse($later->isBefore(other: $earlier));
     }
 
@@ -422,11 +496,19 @@ final class TimeOfDayTest extends TestCase
 
     public function testTimeOfDayToStringFormatsCorrectly(): void
     {
-        /** @Then various times should format correctly */
-        self::assertSame('00:00', TimeOfDay::from(hour: 0, minute: 0)->toString());
-        self::assertSame('08:05', TimeOfDay::from(hour: 8, minute: 5)->toString());
-        self::assertSame('14:30', TimeOfDay::from(hour: 14, minute: 30)->toString());
-        self::assertSame('23:59', TimeOfDay::from(hour: 23, minute: 59)->toString());
+        /** @When converting boundary and common times to their string representations */
+        $strings = array_map(
+            static fn(TimeOfDay $time): string => $time->toString(),
+            [
+                TimeOfDay::from(hour: 0, minute: 0),
+                TimeOfDay::from(hour: 8, minute: 5),
+                TimeOfDay::from(hour: 14, minute: 30),
+                TimeOfDay::from(hour: 23, minute: 59)
+            ]
+        );
+
+        /** @Then each time should format with zero-padded hour and minute */
+        self::assertSame(['00:00', '08:05', '14:30', '23:59'], $strings);
     }
 
     public function testTimeOfDayFromStringAndToStringRoundTrip(): void
@@ -452,8 +534,10 @@ final class TimeOfDayTest extends TestCase
         /** @And creating from hour and minute directly */
         $fromFactory = TimeOfDay::from(hour: 14, minute: 30);
 
-        /** @Then both should produce the same result */
+        /** @Then both should produce the same hour */
         self::assertSame($fromInstant->hour, $fromFactory->hour);
+
+        /** @And the same minute */
         self::assertSame($fromInstant->minute, $fromFactory->minute);
     }
 

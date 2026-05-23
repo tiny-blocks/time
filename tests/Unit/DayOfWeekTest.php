@@ -13,42 +13,74 @@ final class DayOfWeekTest extends TestCase
 {
     public function testDayOfWeekMondayIsWeekday(): void
     {
-        /** @Then Monday should be a weekday */
-        self::assertTrue(DayOfWeek::Monday->isWeekday());
-        self::assertFalse(DayOfWeek::Monday->isWeekend());
+        /** @Given Monday as the day of the week */
+        $day = DayOfWeek::Monday;
+
+        /** @When checking if it is a weekday */
+        $isWeekday = $day->isWeekday();
+
+        /** @Then it should be a weekday */
+        self::assertTrue($isWeekday);
+
+        /** @And it should not be a weekend day */
+        self::assertFalse($day->isWeekend());
     }
 
     public function testDayOfWeekFridayIsWeekday(): void
     {
-        /** @Then Friday should be a weekday */
-        self::assertTrue(DayOfWeek::Friday->isWeekday());
-        self::assertFalse(DayOfWeek::Friday->isWeekend());
+        /** @Given Friday as the day of the week */
+        $day = DayOfWeek::Friday;
+
+        /** @When checking if it is a weekday */
+        $isWeekday = $day->isWeekday();
+
+        /** @Then it should be a weekday */
+        self::assertTrue($isWeekday);
+
+        /** @And it should not be a weekend day */
+        self::assertFalse($day->isWeekend());
     }
 
     public function testDayOfWeekSaturdayIsWeekend(): void
     {
-        /** @Then Saturday should be a weekend day */
-        self::assertTrue(DayOfWeek::Saturday->isWeekend());
-        self::assertFalse(DayOfWeek::Saturday->isWeekday());
+        /** @Given Saturday as the day of the week */
+        $day = DayOfWeek::Saturday;
+
+        /** @When checking if it is a weekend day */
+        $isWeekend = $day->isWeekend();
+
+        /** @Then it should be a weekend day */
+        self::assertTrue($isWeekend);
+
+        /** @And it should not be a weekday */
+        self::assertFalse($day->isWeekday());
     }
 
     public function testDayOfWeekSundayIsWeekend(): void
     {
-        /** @Then Sunday should be a weekend day */
-        self::assertTrue(DayOfWeek::Sunday->isWeekend());
-        self::assertFalse(DayOfWeek::Sunday->isWeekday());
+        /** @Given Sunday as the day of the week */
+        $day = DayOfWeek::Sunday;
+
+        /** @When checking if it is a weekend day */
+        $isWeekend = $day->isWeekend();
+
+        /** @Then it should be a weekend day */
+        self::assertTrue($isWeekend);
+
+        /** @And it should not be a weekday */
+        self::assertFalse($day->isWeekday());
     }
 
     public function testDayOfWeekAllDaysHaveCorrectIsoValues(): void
     {
+        /** @Given all days of the week in ISO 8601 order */
+        $days = DayOfWeek::cases();
+
+        /** @When inspecting their backing values */
+        $values = array_map(static fn(DayOfWeek $day): int => $day->value, $days);
+
         /** @Then each day should map to its ISO 8601 numeric value */
-        self::assertSame(1, DayOfWeek::Monday->value);
-        self::assertSame(2, DayOfWeek::Tuesday->value);
-        self::assertSame(3, DayOfWeek::Wednesday->value);
-        self::assertSame(4, DayOfWeek::Thursday->value);
-        self::assertSame(5, DayOfWeek::Friday->value);
-        self::assertSame(6, DayOfWeek::Saturday->value);
-        self::assertSame(7, DayOfWeek::Sunday->value);
+        self::assertSame([1, 2, 3, 4, 5, 6, 7], $values);
     }
 
     public function testDayOfWeekFromInstantOnMonday(): void
@@ -56,8 +88,11 @@ final class DayOfWeekTest extends TestCase
         /** @Given an Instant on Monday 2026-02-16 */
         $instant = Instant::fromString(value: '2026-02-16T10:00:00+00:00');
 
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
         /** @Then the day should be Monday */
-        self::assertSame(DayOfWeek::Monday, DayOfWeek::fromInstant(instant: $instant));
+        self::assertSame(DayOfWeek::Monday, $day);
     }
 
     public function testDayOfWeekFromInstantOnTuesday(): void
@@ -65,8 +100,11 @@ final class DayOfWeekTest extends TestCase
         /** @Given an Instant on Tuesday 2026-02-17 */
         $instant = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
 
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
         /** @Then the day should be Tuesday */
-        self::assertSame(DayOfWeek::Tuesday, DayOfWeek::fromInstant(instant: $instant));
+        self::assertSame(DayOfWeek::Tuesday, $day);
     }
 
     public function testDayOfWeekFromInstantOnWednesday(): void
@@ -74,8 +112,11 @@ final class DayOfWeekTest extends TestCase
         /** @Given an Instant on Wednesday 2026-02-18 */
         $instant = Instant::fromString(value: '2026-02-18T14:30:00+00:00');
 
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
         /** @Then the day should be Wednesday */
-        self::assertSame(DayOfWeek::Wednesday, DayOfWeek::fromInstant(instant: $instant));
+        self::assertSame(DayOfWeek::Wednesday, $day);
     }
 
     public function testDayOfWeekFromInstantOnThursday(): void
@@ -83,8 +124,11 @@ final class DayOfWeekTest extends TestCase
         /** @Given an Instant at midnight on Thursday 2026-02-19 */
         $instant = Instant::fromString(value: '2026-02-19T00:00:00+00:00');
 
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
         /** @Then the day should be Thursday */
-        self::assertSame(DayOfWeek::Thursday, DayOfWeek::fromInstant(instant: $instant));
+        self::assertSame(DayOfWeek::Thursday, $day);
     }
 
     public function testDayOfWeekFromInstantOnFriday(): void
@@ -92,8 +136,11 @@ final class DayOfWeekTest extends TestCase
         /** @Given an Instant on Friday 2026-02-20 */
         $instant = Instant::fromString(value: '2026-02-20T17:00:00+00:00');
 
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
         /** @Then the day should be Friday */
-        self::assertSame(DayOfWeek::Friday, DayOfWeek::fromInstant(instant: $instant));
+        self::assertSame(DayOfWeek::Friday, $day);
     }
 
     public function testDayOfWeekFromInstantOnSaturday(): void
@@ -101,8 +148,11 @@ final class DayOfWeekTest extends TestCase
         /** @Given an Instant on Saturday 2026-02-21 */
         $instant = Instant::fromString(value: '2026-02-21T08:00:00+00:00');
 
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
         /** @Then the day should be Saturday */
-        self::assertSame(DayOfWeek::Saturday, DayOfWeek::fromInstant(instant: $instant));
+        self::assertSame(DayOfWeek::Saturday, $day);
     }
 
     public function testDayOfWeekFromInstantOnSunday(): void
@@ -110,41 +160,55 @@ final class DayOfWeekTest extends TestCase
         /** @Given an Instant on Sunday 2026-02-22 */
         $instant = Instant::fromString(value: '2026-02-22T23:59:59+00:00');
 
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
         /** @Then the day should be Sunday */
-        self::assertSame(DayOfWeek::Sunday, DayOfWeek::fromInstant(instant: $instant));
+        self::assertSame(DayOfWeek::Sunday, $day);
     }
 
     public function testDayOfWeekWeekdayAndWeekendAreMutuallyExclusive(): void
     {
-        /** @Then every day should be exactly one of weekday or weekend */
-        self::assertNotSame(DayOfWeek::Monday->isWeekday(), DayOfWeek::Monday->isWeekend());
-        self::assertNotSame(DayOfWeek::Tuesday->isWeekday(), DayOfWeek::Tuesday->isWeekend());
-        self::assertNotSame(DayOfWeek::Wednesday->isWeekday(), DayOfWeek::Wednesday->isWeekend());
-        self::assertNotSame(DayOfWeek::Thursday->isWeekday(), DayOfWeek::Thursday->isWeekend());
-        self::assertNotSame(DayOfWeek::Friday->isWeekday(), DayOfWeek::Friday->isWeekend());
-        self::assertNotSame(DayOfWeek::Saturday->isWeekday(), DayOfWeek::Saturday->isWeekend());
-        self::assertNotSame(DayOfWeek::Sunday->isWeekday(), DayOfWeek::Sunday->isWeekend());
+        /** @Given all days of the week */
+        $days = DayOfWeek::cases();
+
+        /** @When checking that weekday and weekend are mutually exclusive for each day */
+        $conflicts = array_filter(
+            $days,
+            static fn(DayOfWeek $day): bool => $day->isWeekday() === $day->isWeekend()
+        );
+
+        /** @Then no day should be both a weekday and a weekend day */
+        self::assertCount(0, $conflicts);
     }
 
     public function testDayOfWeekExactlyFiveWeekdays(): void
     {
-        /** @Then there should be exactly 5 weekdays */
+        /** @Given all days of the week */
+        $allDays = DayOfWeek::cases();
+
+        /** @When filtering for weekdays */
         $weekdays = array_filter(
-            DayOfWeek::cases(),
+            $allDays,
             static fn(DayOfWeek $day): bool => $day->isWeekday()
         );
 
+        /** @Then there should be exactly 5 weekdays */
         self::assertCount(5, $weekdays);
     }
 
     public function testDayOfWeekExactlyTwoWeekendDays(): void
     {
-        /** @Then there should be exactly 2 weekend days */
+        /** @Given all days of the week */
+        $allDays = DayOfWeek::cases();
+
+        /** @When filtering for weekend days */
         $weekends = array_filter(
-            DayOfWeek::cases(),
+            $allDays,
             static fn(DayOfWeek $day): bool => $day->isWeekend()
         );
 
+        /** @Then there should be exactly 2 weekend days */
         self::assertCount(2, $weekends);
     }
 
@@ -152,24 +216,36 @@ final class DayOfWeekTest extends TestCase
     public function testDayOfWeekDistanceToSameDayReturnsZero(DayOfWeek $day): void
     {
         /** @Given the same day of the week */
+
+        /** @When computing the forward distance to itself */
+        $distance = $day->distanceTo(other: $day);
+
         /** @Then the distance to itself should be zero */
-        self::assertSame(0, $day->distanceTo(other: $day));
+        self::assertSame(0, $distance);
     }
 
     #[DataProvider('forwardDistanceDataProvider')]
     public function testDayOfWeekDistanceToForward(DayOfWeek $from, DayOfWeek $to, int $expectedDistance): void
     {
         /** @Given a starting day and a target day */
+
+        /** @When computing the forward distance */
+        $distance = $from->distanceTo(other: $to);
+
         /** @Then the forward distance should match the expected value */
-        self::assertSame($expectedDistance, $from->distanceTo(other: $to));
+        self::assertSame($expectedDistance, $distance);
     }
 
     #[DataProvider('wrapAroundDistanceDataProvider')]
     public function testDayOfWeekDistanceToWrapsAroundWeek(DayOfWeek $from, DayOfWeek $to, int $expectedDistance): void
     {
         /** @Given a starting day that is after the target day in the week */
+
+        /** @When computing the forward distance */
+        $distance = $from->distanceTo(other: $to);
+
         /** @Then the distance should wrap forward through the end of the week */
-        self::assertSame($expectedDistance, $from->distanceTo(other: $to));
+        self::assertSame($expectedDistance, $distance);
     }
 
     #[DataProvider('asymmetricDistanceDataProvider')]
@@ -180,9 +256,16 @@ final class DayOfWeekTest extends TestCase
         int $expectedBackward
     ): void {
         /** @Given two distinct days of the week */
+
+        /** @When computing the forward distance */
+        $forward = $from->distanceTo(other: $to);
+
+        /** @And computing the backward distance */
+        $backward = $to->distanceTo(other: $from);
+
         /** @Then the forward and backward distances should differ */
-        self::assertSame($expectedForward, $from->distanceTo(other: $to));
-        self::assertSame($expectedBackward, $to->distanceTo(other: $from));
+        self::assertSame($expectedForward, $forward);
+        self::assertSame($expectedBackward, $backward);
 
         /** @And together they should complete a full week */
         self::assertSame(7, $expectedForward + $expectedBackward);
@@ -192,6 +275,8 @@ final class DayOfWeekTest extends TestCase
     public function testDayOfWeekDistanceToNeverExceedsSix(DayOfWeek $from, DayOfWeek $to): void
     {
         /** @Given any pair of days */
+
+        /** @When computing the forward distance */
         $distance = $from->distanceTo(other: $to);
 
         /** @Then the distance should be in the range [0, 6] */

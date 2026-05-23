@@ -65,9 +65,9 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Derives the time of day from an Instant (in UTC).
+     * Creates a TimeOfDay from an Instant.
      *
-     * @param Instant $instant The point in time to extract the time from.
+     * @param Instant $instant The point in time to extract the time from (in UTC).
      * @return TimeOfDay The corresponding time of day.
      */
     public static function fromInstant(Instant $instant): TimeOfDay
@@ -111,7 +111,7 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Returns the Duration from midnight to this time of day.
+     * Returns the TimeOfDay as a Duration since midnight.
      *
      * @return Duration The duration since midnight.
      */
@@ -121,7 +121,7 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Returns true if this time is strictly before another.
+     * Tells whether this time is strictly before another.
      *
      * @param TimeOfDay $other The time to compare against.
      * @return bool True if this time precedes the other.
@@ -132,7 +132,7 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Returns true if this time is strictly after another.
+     * Tells whether this time is strictly after another.
      *
      * @param TimeOfDay $other The time to compare against.
      * @return bool True if this time follows the other.
@@ -143,7 +143,7 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Returns true if this time is before or equal to another.
+     * Tells whether this time is before or equal to another.
      *
      * @param TimeOfDay $other The time to compare against.
      * @return bool True if this time is at or before the other.
@@ -154,7 +154,7 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Returns true if this time is after or equal to another.
+     * Tells whether this time is after or equal to another.
      *
      * @param TimeOfDay $other The time to compare against.
      * @return bool True if this time is at or after the other.
@@ -174,19 +174,19 @@ final readonly class TimeOfDay implements ValueObject
      */
     public function durationUntil(TimeOfDay $other): Duration
     {
-        $diff = $other->toMinutesSinceMidnight() - $this->toMinutesSinceMidnight();
+        $difference = $other->toMinutesSinceMidnight() - $this->toMinutesSinceMidnight();
 
-        if ($diff <= 0) {
+        if ($difference <= 0) {
             throw InvalidTimeOfDay::becauseEndIsNotAfterStart(from: $this, to: $other);
         }
 
-        return Duration::fromMinutes(minutes: $diff);
+        return Duration::fromMinutes(minutes: $difference);
     }
 
     /**
-     * Formats this time as "HH:MM".
+     * Returns the TimeOfDay as a string.
      *
-     * @return string The formatted time string.
+     * @return string The time formatted as "HH:MM".
      */
     public function toString(): string
     {
