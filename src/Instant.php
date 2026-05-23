@@ -18,7 +18,11 @@ final readonly class Instant implements ValueObject
     use ValueObjectBehavior;
 
     private const string UNIX_FORMAT = 'U';
+    private const string OFFSET_FORMAT = 'P';
     private const string ISO8601_FORMAT = 'Y-m-d\TH:i:sP';
+    private const string ISO8601_MICRO_FORMAT = 'Y-m-d\TH:i:s.uP';
+    private const string ISO8601_DATETIME_FORMAT = 'Y-m-d\TH:i:s';
+    private const string FRACTIONAL_SECONDS_FORMAT = 'u';
 
     private function __construct(private DateTimeImmutable $datetime)
     {
@@ -36,7 +40,7 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Creates an Instant by decoding a date-time string.
+     * Creates an Instant from a date-time string.
      *
      * @param string $value A date-time string in a supported format (e.g. 2026-02-17T10:30:00+00:00).
      * @return Instant The created Instant, normalized to UTC.
@@ -61,7 +65,6 @@ final readonly class Instant implements ValueObject
         $utc = Timezone::utc()->toDateTimeZone();
         $datetime = DateTimeImmutable::createFromFormat(self::UNIX_FORMAT, (string)$seconds, $utc);
 
-        /** @var DateTimeImmutable $datetime */
         return new Instant(datetime: $datetime->setTimezone($utc));
     }
 
@@ -108,7 +111,7 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Returns true if this instant is strictly before the other.
+     * Tells whether this instant is strictly before the other.
      *
      * @param Instant $other The instant to compare against.
      * @return bool True if this instant precedes the other.
@@ -119,7 +122,7 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Returns true if this instant is strictly after the other.
+     * Tells whether this instant is strictly after the other.
      *
      * @param Instant $other The instant to compare against.
      * @return bool True if this instant follows the other.
@@ -130,7 +133,7 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Returns true if this instant is before or at the same moment as the other.
+     * Tells whether this instant is before or at the same moment as the other.
      *
      * @param Instant $other The instant to compare against.
      * @return bool True if this instant is at or before the other.
@@ -141,7 +144,7 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Returns true if this instant is after or at the same moment as the other.
+     * Tells whether this instant is after or at the same moment as the other.
      *
      * @param Instant $other The instant to compare against.
      * @return bool True if this instant is at or after the other.
@@ -152,13 +155,51 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Formats this instant as an ISO 8601 string in UTC (e.g. 2026-02-17T10:30:00+00:00).
+     * Returns the Instant as an ISO 8601 string in UTC at the chosen sub-second precision.
      *
-     * @return string The ISO 8601 representation without fractional seconds.
+     * The output always carries the +00:00 offset and is composed of a date, a time, and an
+     * optional fractional-seconds component determined by the precision argument:
+     *
+     *  - Precision::Seconds (default) — no fractional component, e.g. 2026-02-17T10:30:00+00:00.
+     *  - Precision::Milliseconds      — three fractional digits, e.g. 2026-02-17T08:27:21.106+00:00.
+     *  - Precision::Microseconds      — six fractional digits, e.g. 2026-02-17T08:27:21.106011+00:00.
+     *
+     * Use Microseconds when interoperating with stores that hold sub-second precision (e.g. a
+     * TIMESTAMP(6) column). Use Seconds for human-facing logs or APIs that do not carry
+     * sub-second timing. Use Milliseconds when consumers expect millisecond resolution but
+     * not microseconds (some web APIs, JavaScript Date).
+     *
+     * @param Precision $precision The sub-second granularity to include in the output.
+     *                             Defaults to Precision::Seconds.
+     * @return string The ISO 8601 representation in UTC at the requested precision.
      */
-    public function toIso8601(): string
+    public function toIso8601(Precision $precision = Precision::Seconds): string
     {
-        return $this->datetime->format(self::ISO8601_FORMAT);
+        $template = '%s.%s%s';
+
+        return match ($precision) {
+            Precision::Seconds      => $this->datetime->format(self::ISO8601_FORMAT),
+            Precision::Microseconds => $this->datetime->format(self::ISO8601_MICRO_FORMAT),
+            Precision::Milliseconds => sprintf(
+                $template,
+                $this->datetime->format(self::ISO8601_DATETIME_FORMAT),
+                substr($this->datetime->format(self::FRACTIONAL_SECONDS_FORMAT), 0, 3),
+                $this->datetime->format(self::OFFSET_FORMAT)
+            )
+        };
+    }
+
+    /**
+     * Projects this instant into a calendar date under the given timezone.
+     *
+     * @param Timezone $zone The timezone used to determine the civil date.
+     * @return LocalDate The local date in the given timezone at this instant.
+     */
+    public function toLocalDate(Timezone $zone): LocalDate
+    {
+        $dateTime = $this->datetime->setTimezone($zone->toDateTimeZone());
+
+        return LocalDate::fromString(value: $dateTime->format('Y-m-d'));
     }
 
     /**
@@ -172,7 +213,7 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Returns the underlying DateTimeImmutable instance in UTC.
+     * Returns the Instant as a DateTimeImmutable in UTC.
      *
      * @return DateTimeImmutable The UTC date-time with microsecond precision.
      */
