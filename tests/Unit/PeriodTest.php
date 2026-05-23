@@ -371,8 +371,13 @@ final class PeriodTest extends TestCase
         /** @And a 1-second micro-period starting at that Instant */
         $microPeriod = Period::startingAt(from: $contained, duration: Duration::fromSeconds(seconds: 1));
 
-        /** @Then the period should contain the instant and overlap with the micro-period */
-        self::assertTrue($period->contains(instant: $contained));
+        /** @When checking if the period contains the instant */
+        $containsResult = $period->contains(instant: $contained);
+
+        /** @Then the period should contain the instant */
+        self::assertTrue($containsResult);
+
+        /** @And it should overlap with the micro-period */
         self::assertTrue($period->overlapsWith(other: $microPeriod));
     }
 
@@ -390,11 +395,13 @@ final class PeriodTest extends TestCase
             duration: Duration::fromHours(hours: 1)
         );
 
-        /** @Then symmetry should hold for non-overlapping case */
-        self::assertSame(
-            $periodA->overlapsWith(other: $periodB),
-            $periodB->overlapsWith(other: $periodA)
-        );
-        self::assertFalse($periodA->overlapsWith(other: $periodB));
+        /** @When checking if the periods overlap */
+        $overlaps = $periodA->overlapsWith(other: $periodB);
+
+        /** @Then they should not overlap */
+        self::assertFalse($overlaps);
+
+        /** @And the overlap check should be symmetric */
+        self::assertSame($overlaps, $periodB->overlapsWith(other: $periodA));
     }
 }

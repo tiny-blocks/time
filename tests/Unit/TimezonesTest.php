@@ -28,20 +28,28 @@ final class TimezonesTest extends TestCase
 
     public function testTimezonesFromMultipleTimezones(): void
     {
-        /** @Given multiple Timezone objects */
+        /** @Given a Timezone for São Paulo */
         $first = Timezone::from(identifier: 'America/Sao_Paulo');
+
+        /** @And a Timezone for New York */
         $second = Timezone::from(identifier: 'America/New_York');
+
+        /** @And a Timezone for Tokyo */
         $third = Timezone::from(identifier: 'Asia/Tokyo');
 
         /** @When creating a Timezones collection */
         $timezones = Timezones::from($first, $second, $third);
 
-        /** @Then the collection should contain all three items */
+        /** @Then the collection should contain three items */
         self::assertSame(3, $timezones->count());
 
-        /** @And they should be in the same order */
+        /** @And the first should be America/Sao_Paulo */
         self::assertSame('America/Sao_Paulo', $timezones->all()[0]->value);
+
+        /** @And the second should be America/New_York */
         self::assertSame('America/New_York', $timezones->all()[1]->value);
+
+        /** @And the third should be Asia/Tokyo */
         self::assertSame('Asia/Tokyo', $timezones->all()[2]->value);
     }
 
@@ -72,8 +80,11 @@ final class TimezonesTest extends TestCase
         /** @Given a Timezones collection with known identifiers */
         $timezones = Timezones::fromStrings('America/Sao_Paulo', 'America/New_York');
 
-        /** @Then contains should return true for an existing identifier */
-        self::assertTrue($timezones->contains(iana: 'America/Sao_Paulo'));
+        /** @When checking if 'America/Sao_Paulo' is contained */
+        $result = $timezones->contains(iana: 'America/Sao_Paulo');
+
+        /** @Then it should return true */
+        self::assertTrue($result);
     }
 
     public function testTimezonesContainsReturnsFalseForMissingIdentifier(): void
@@ -81,8 +92,11 @@ final class TimezonesTest extends TestCase
         /** @Given a Timezones collection with known identifiers */
         $timezones = Timezones::fromStrings('America/Sao_Paulo', 'America/New_York');
 
-        /** @Then contains should return false for a non-existing identifier */
-        self::assertFalse($timezones->contains(iana: 'Asia/Tokyo'));
+        /** @When checking if 'Asia/Tokyo' is contained */
+        $result = $timezones->contains(iana: 'Asia/Tokyo');
+
+        /** @Then it should return false */
+        self::assertFalse($result);
     }
 
     public function testTimezonesFindByIdentifierReturnsMatchingTimezone(): void
@@ -139,8 +153,11 @@ final class TimezonesTest extends TestCase
         /** @Given a Timezones collection with four items */
         $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo', 'Europe/London');
 
-        /** @Then count() should match the number of items in all() */
-        self::assertCount($timezones->count(), $timezones->all());
+        /** @When checking the count */
+        $count = $timezones->count();
+
+        /** @Then count should match the number of items in all() */
+        self::assertCount($count, $timezones->all());
     }
 
     public function testTimezonesIsCountable(): void
@@ -148,8 +165,11 @@ final class TimezonesTest extends TestCase
         /** @Given a Timezones collection */
         $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo');
 
-        /** @Then the native count() function should work */
-        self::assertSame(2, count($timezones));
+        /** @When counting via the native count() function */
+        $count = count($timezones);
+
+        /** @Then the count should be 2 */
+        self::assertSame(2, $count);
     }
 
     public function testTimezonesToStringsReturnsPlainIdentifiers(): void
@@ -160,12 +180,11 @@ final class TimezonesTest extends TestCase
         /** @When converting to strings */
         $strings = $timezones->toStrings();
 
-        /** @Then each element should match its corresponding Timezone value */
-        $all = $timezones->all();
-
-        foreach ($strings as $index => $string) {
-            self::assertSame($all[$index]->value, $string);
-        }
+        /** @Then each identifier should match its corresponding Timezone value */
+        self::assertSame(
+            array_map(static fn(Timezone $timezone): string => $timezone->value, $timezones->all()),
+            $strings
+        );
     }
 
     public function testTimezonesFromEmptyReturnsEmptyCollection(): void
@@ -173,9 +192,13 @@ final class TimezonesTest extends TestCase
         /** @When creating an empty Timezones collection */
         $timezones = Timezones::from();
 
-        /** @Then the collection should be empty */
+        /** @Then the count should be zero */
         self::assertSame(0, $timezones->count());
+
+        /** @And all() should return an empty array */
         self::assertSame([], $timezones->all());
+
+        /** @And toStrings() should return an empty array */
         self::assertSame([], $timezones->toStrings());
     }
 
@@ -193,12 +216,17 @@ final class TimezonesTest extends TestCase
 
     public function testTimezonesCreatedFromSameIdentifiersAreConsistent(): void
     {
-        /** @Given two Timezones collections created from the same identifiers */
+        /** @Given a first Timezones collection */
         $first = Timezones::fromStrings('UTC', 'America/Sao_Paulo');
+
+        /** @And a second Timezones collection from the same identifiers */
         $second = Timezones::fromStrings('UTC', 'America/Sao_Paulo');
 
-        /** @Then their string representations should be identical */
-        self::assertSame($first->toStrings(), $second->toStrings());
+        /** @When converting the first to strings */
+        $strings = $first->toStrings();
+
+        /** @Then they should be identical to the second's string representation */
+        self::assertSame($strings, $second->toStrings());
 
         /** @And their counts should match */
         self::assertSame($first->count(), $second->count());
