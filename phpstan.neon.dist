@@ -4,6 +4,10 @@ parameters:
         - src
         - tests
     ignoreErrors:
+        # DateTimeImmutable::createFromFormat returns DateTimeImmutable|false; the UNIX format 'U' always succeeds for a valid integer, so the false branch is unreachable.
+        - identifier: method.nonObject
+          path: src/Instant.php
+
         # Property and constructor parameter are intentionally untyped; PHPDoc on constructors is prohibited per code-style rule. Suppress missing iterable value-type plus cascading return.type and argument.type errors that propagate from the untyped property.
         - identifier: missingType.iterableValue
           path: src/Timezones.php
