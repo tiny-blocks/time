@@ -20,7 +20,7 @@ final readonly class Timezones implements Countable
     }
 
     /**
-     * Creates a collection from Timezone objects.
+     * Creates a Timezones from Timezone objects.
      *
      * @param Timezone ...$timezones One or more Timezone instances.
      * @return Timezones The created collection.
@@ -31,7 +31,7 @@ final readonly class Timezones implements Countable
     }
 
     /**
-     * Creates a collection from IANA identifier strings.
+     * Creates a Timezones from IANA identifier strings.
      *
      * @param string ...$identifiers One or more IANA timezone identifiers (e.g. America/Sao_Paulo).
      * @return Timezones The created collection.
@@ -107,7 +107,7 @@ final readonly class Timezones implements Countable
     }
 
     /**
-     * Returns all timezone identifiers as plain strings.
+     * Returns the Timezones as strings.
      *
      * @return list<string> The list of IANA timezone identifier strings.
      */
