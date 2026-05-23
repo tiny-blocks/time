@@ -1,6 +1,6 @@
 # Time
 
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/tiny-blocks/time/blob/main/LICENSE)
 
 * [Overview](#overview)
 * [Installation](#installation)
@@ -13,6 +13,7 @@
         - [Adding and subtracting time](#adding-and-subtracting-time)
         - [Measuring distance between instants](#measuring-distance-between-instants)
         - [Comparing instants](#comparing-instants)
+        - [Emitting with sub-second precision](#emitting-with-sub-second-precision)
     + [Duration](#duration)
         - [Creating durations](#creating-durations)
         - [Arithmetic](#arithmetic)
@@ -37,6 +38,13 @@
         - [Comparing times](#comparing-times)
         - [Measuring distance between times](#measuring-distance-between-times)
         - [Converting to other representations](#converting-to-other-representations)
+    + [LocalDate](#localdate)
+        - [Creating from components](#creating-from-components-1)
+        - [Creating from a string](#creating-from-a-string-2)
+        - [Today in a timezone](#today-in-a-timezone)
+        - [Projecting an Instant](#projecting-an-instant)
+        - [Comparing dates](#comparing-dates)
+        - [Day arithmetic](#day-arithmetic)
     + [Timezone](#timezone)
         - [Creating from an identifier](#creating-from-an-identifier)
         - [Creating a UTC timezone](#creating-a-utc-timezone)
@@ -54,8 +62,8 @@
 
 ## Overview
 
-Models time as immutable value objects for PHP, including instants, durations, periods, timezones, time-of-day, and
-day-of-week. All instants are normalized to UTC with microsecond precision, with strict parsing, formatting, and
+Models time as immutable value objects for PHP, including instants, durations, periods, timezones, time-of-day,
+local dates, and day-of-week. All instants are normalized to UTC with microsecond precision, with strict parsing, formatting, and
 arithmetic operations. Declared as `final readonly class` for language-level immutability, with structural equality
 provided by the tiny-blocks value-object contract.
 
@@ -224,6 +232,27 @@ $earlier->isBeforeOrEqual(other: $later);  # true
 $earlier->isAfterOrEqual(other: $later);   # false
 $later->isAfter(other: $earlier);          # true
 $later->isAfterOrEqual(other: $earlier);   # true
+```
+
+#### Emitting with sub-second precision
+
+By default `toIso8601()` emits seconds only. Pass a `Precision` value to include fractional
+seconds in the output. Existing callers that omit the argument are unaffected.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Instant;
+use TinyBlocks\Time\Precision;
+
+$instant = Instant::fromString(value: '2026-05-23T12:55:10.272097+00:00');
+
+$instant->toIso8601();                               # 2026-05-23T12:55:10+00:00
+$instant->toIso8601(precision: Precision::Seconds);  # 2026-05-23T12:55:10+00:00
+$instant->toIso8601(precision: Precision::Microseconds); # 2026-05-23T12:55:10.272097+00:00
+$instant->toIso8601(precision: Precision::Milliseconds); # 2026-05-23T12:55:10.272+00:00
 ```
 
 ### Duration
@@ -646,6 +675,108 @@ $time = TimeOfDay::from(hour: 8, minute: 30);
 $time->toMinutesSinceMidnight();  # 510
 $time->toDuration()->toSeconds(); # 30600
 $time->toString();                # 08:30
+```
+
+### LocalDate
+
+A `LocalDate` is a value object representing a calendar date (year, month, day) without time and without timezone.
+Dates are always in the proleptic Gregorian calendar and restricted to the range `0001–9999`.
+
+#### Creating from components
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\LocalDate;
+
+$date = LocalDate::of(year: 2026, month: 5, day: 23);
+
+$date->year();        # 2026
+$date->month();       # 5
+$date->dayOfMonth();  # 23
+$date->toIso8601();   # 2026-05-23
+```
+
+#### Creating from a string
+
+Accepts only the canonical ISO 8601 date format `YYYY-MM-DD`. Any other format raises `InvalidLocalDate`.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\LocalDate;
+
+$date = LocalDate::fromString(value: '2026-05-23');
+
+$date->toIso8601(); # 2026-05-23
+```
+
+#### Today in a timezone
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\LocalDate;
+use TinyBlocks\Time\Timezone;
+
+$today = LocalDate::today(zone: Timezone::from(identifier: 'America/Sao_Paulo'));
+
+$today->toIso8601(); # 2026-05-23
+```
+
+#### Projecting an Instant
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Instant;
+use TinyBlocks\Time\Timezone;
+
+$instant = Instant::fromString(value: '2026-05-23T12:00:00+00:00');
+$date = $instant->toLocalDate(zone: Timezone::utc());
+
+$date->toIso8601(); # 2026-05-23
+```
+
+#### Comparing dates
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\LocalDate;
+
+$earlier = LocalDate::of(year: 2026, month: 1, day: 1);
+$later = LocalDate::of(year: 2026, month: 12, day: 31);
+
+$earlier->isBefore(other: $later);        # true
+$earlier->isBeforeOrEqual(other: $later); # true
+$later->isAfter(other: $earlier);         # true
+$later->isAfterOrEqual(other: $earlier);  # true
+```
+
+#### Day arithmetic
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\LocalDate;
+
+$date = LocalDate::of(year: 2026, month: 5, day: 23);
+
+$date->plusDays(days: 10)->toIso8601();  # 2026-06-02
+$date->minusDays(days: 30)->toIso8601(); # 2026-04-23
 ```
 
 ### Timezone
