@@ -11,7 +11,7 @@ use TinyBlocks\Time\Timezone;
 
 final class TimezoneTest extends TestCase
 {
-    public function testTimezoneUtcHasCorrectValue(): void
+    public function testUtcThenValueIsUtc(): void
     {
         /** @When creating a UTC Timezone */
         $timezone = Timezone::utc();
@@ -20,7 +20,7 @@ final class TimezoneTest extends TestCase
         self::assertSame('UTC', $timezone->value);
     }
 
-    public function testTimezoneUtcToStringReturnsUtc(): void
+    public function testUtcWhenToStringThenReturnsUtc(): void
     {
         /** @Given a UTC Timezone */
         $timezone = Timezone::utc();
@@ -32,7 +32,7 @@ final class TimezoneTest extends TestCase
         self::assertSame('UTC', $result);
     }
 
-    public function testTimezoneUtcToDateTimeZoneReturnsUtc(): void
+    public function testUtcWhenToDateTimeZoneThenNameIsUtc(): void
     {
         /** @Given a UTC Timezone */
         $timezone = Timezone::utc();
@@ -45,7 +45,7 @@ final class TimezoneTest extends TestCase
     }
 
     #[DataProvider('validIdentifiersDataProvider')]
-    public function testTimezoneFromValidIdentifier(string $identifier): void
+    public function testFromWhenValidIdentifierThenValueMatches(string $identifier): void
     {
         /** @Given a valid IANA timezone identifier */
         /** @When creating a Timezone from the identifier */
@@ -58,8 +58,21 @@ final class TimezoneTest extends TestCase
         self::assertSame($identifier, $timezone->toString());
     }
 
+    #[DataProvider('invalidIdentifiersDataProvider')]
+    public function testFromWhenInvalidIdentifierThenInvalidTimezone(string $identifier): void
+    {
+        /** @Given an invalid timezone identifier */
+        /** @Then an InvalidTimezone exception should be thrown */
+        $this->expectException(InvalidTimezone::class);
+        $template = 'Timezone <%s> is invalid.';
+        $this->expectExceptionMessage(sprintf($template, $identifier));
+
+        /** @When trying to create a Timezone from the invalid identifier */
+        Timezone::from(identifier: $identifier);
+    }
+
     #[DataProvider('validIdentifiersDataProvider')]
-    public function testTimezoneToDateTimeZoneMatchesIdentifier(string $identifier): void
+    public function testFromWhenValidIdentifierThenDateTimeZoneNameMatches(string $identifier): void
     {
         /** @Given a Timezone created from a valid identifier */
         $timezone = Timezone::from(identifier: $identifier);
@@ -69,18 +82,6 @@ final class TimezoneTest extends TestCase
 
         /** @Then the DateTimeZone name should match the original identifier */
         self::assertSame($identifier, $dateTimeZone->getName());
-    }
-
-    #[DataProvider('invalidIdentifiersDataProvider')]
-    public function testTimezoneWhenInvalidIdentifier(string $identifier): void
-    {
-        /** @Given an invalid timezone identifier */
-        /** @Then an InvalidTimezone exception should be thrown */
-        $this->expectException(InvalidTimezone::class);
-        $this->expectExceptionMessage(sprintf('Timezone <%s> is invalid.', $identifier));
-
-        /** @When trying to create a Timezone from the invalid identifier */
-        Timezone::from(identifier: $identifier);
     }
 
     public static function validIdentifiersDataProvider(): array

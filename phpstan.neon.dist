@@ -8,13 +8,19 @@ parameters:
         - identifier: method.nonObject
           path: src/Instant.php
 
-        # Property and constructor parameter are intentionally untyped; PHPDoc on constructors is prohibited per code-style rule. Suppress missing iterable value-type plus cascading return.type and argument.type errors that propagate from the untyped property.
-        - identifier: missingType.iterableValue
+        # Collectible is a @template TValue interface; the promoted constructor property $timezones cannot
+        # carry a Collectible<Timezone> type parameter because PHPDoc on constructors is prohibited.
+        - identifier: missingType.generics
           path: src/Timezones.php
 
+        # Collectible operations surface as mixed at level max, so return.type fires on three members here:
+        # findBy() (mixed narrowed to Timezone by the collection invariant), toStrings() (toArray() yields a
+        # less specific iterable value type), and all() (single-pass spread of a non-generic Collectible
+        # infers list<mixed> instead of list<Timezone>).
         - identifier: return.type
           path: src/Timezones.php
 
+        # Collection::createFrom expects iterable<int, mixed>; variadic packed arrays and toArray() results carry less specific keys.
         - identifier: argument.type
           path: src/Timezones.php
 

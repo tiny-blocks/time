@@ -33,6 +33,6 @@ final readonly class TextDecoder
             }
         }
 
-        throw new InvalidInstant(value: $value);
+        throw InvalidInstant::becauseValueCannotBeDecoded(value: $value);
     }
 }

@@ -14,7 +14,8 @@
         "datetime",
         "iso-8601",
         "tiny-blocks",
-        "value-object"
+        "value-object",
+        "monotonic-clock"
     ],
     "authors": [
         {
@@ -29,12 +30,14 @@
     },
     "require": {
         "php": "^8.5",
+        "tiny-blocks/collection": "^2.4",
+        "tiny-blocks/mapper": "^3.0",
         "tiny-blocks/value-object": "^5.0"
     },
     "require-dev": {
         "ergebnis/composer-normalize": "^2.52",
         "infection/infection": "^0.33",
-        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^13.1",
         "squizlabs/php_codesniffer": "^4.0"
     },

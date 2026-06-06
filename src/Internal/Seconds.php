@@ -14,11 +14,6 @@ final readonly class Seconds
     {
     }
 
-    public static function zero(): Seconds
-    {
-        return new Seconds(value: self::ZERO);
-    }
-
     public static function from(int $value): Seconds
     {
         if ($value < self::ZERO) {
@@ -26,6 +21,11 @@ final readonly class Seconds
         }
 
         return new Seconds(value: $value);
+    }
+
+    public static function zero(): Seconds
+    {
+        return new Seconds(value: self::ZERO);
     }
 
     public function plus(Seconds $other): Seconds
@@ -58,14 +58,14 @@ final readonly class Seconds
         return $this->value === self::ZERO;
     }
 
-    public function isGreaterThan(Seconds $other): bool
-    {
-        return $this->value > $other->value;
-    }
-
     public function isLessThan(Seconds $other): bool
     {
         return $this->value < $other->value;
+    }
+
+    public function isGreaterThan(Seconds $other): bool
+    {
+        return $this->value > $other->value;
     }
 
     public function divideByScalar(int $divisor): int

@@ -6,6 +6,9 @@ namespace TinyBlocks\Time\Internal\Decoders;
 
 use DateTimeImmutable;
 
+/**
+ * Decodes a string representation into a DateTimeImmutable instance.
+ */
 interface Decoder
 {
     /**

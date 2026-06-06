@@ -11,22 +11,19 @@ use TinyBlocks\Time\Instant;
 
 final class DayOfWeekTest extends TestCase
 {
-    public function testDayOfWeekMondayIsWeekday(): void
+    public function testCasesThenMapToIso8601NumericValues(): void
     {
-        /** @Given Monday as the day of the week */
-        $day = DayOfWeek::Monday;
+        /** @Given all days of the week in ISO 8601 order */
+        $days = DayOfWeek::cases();
 
-        /** @When checking if it is a weekday */
-        $isWeekday = $day->isWeekday();
+        /** @When inspecting their backing values */
+        $values = array_map(static fn(DayOfWeek $day): int => $day->value, $days);
 
-        /** @Then it should be a weekday */
-        self::assertTrue($isWeekday);
-
-        /** @And it should not be a weekend day */
-        self::assertFalse($day->isWeekend());
+        /** @Then each day should map to its ISO 8601 numeric value */
+        self::assertSame([1, 2, 3, 4, 5, 6, 7], $values);
     }
 
-    public function testDayOfWeekFridayIsWeekday(): void
+    public function testIsWeekdayWhenFridayThenReturnsTrue(): void
     {
         /** @Given Friday as the day of the week */
         $day = DayOfWeek::Friday;
@@ -41,163 +38,22 @@ final class DayOfWeekTest extends TestCase
         self::assertFalse($day->isWeekend());
     }
 
-    public function testDayOfWeekSaturdayIsWeekend(): void
+    public function testIsWeekdayWhenMondayThenReturnsTrue(): void
     {
-        /** @Given Saturday as the day of the week */
-        $day = DayOfWeek::Saturday;
+        /** @Given Monday as the day of the week */
+        $day = DayOfWeek::Monday;
 
-        /** @When checking if it is a weekend day */
-        $isWeekend = $day->isWeekend();
+        /** @When checking if it is a weekday */
+        $isWeekday = $day->isWeekday();
 
-        /** @Then it should be a weekend day */
-        self::assertTrue($isWeekend);
+        /** @Then it should be a weekday */
+        self::assertTrue($isWeekday);
 
-        /** @And it should not be a weekday */
-        self::assertFalse($day->isWeekday());
+        /** @And it should not be a weekend day */
+        self::assertFalse($day->isWeekend());
     }
 
-    public function testDayOfWeekSundayIsWeekend(): void
-    {
-        /** @Given Sunday as the day of the week */
-        $day = DayOfWeek::Sunday;
-
-        /** @When checking if it is a weekend day */
-        $isWeekend = $day->isWeekend();
-
-        /** @Then it should be a weekend day */
-        self::assertTrue($isWeekend);
-
-        /** @And it should not be a weekday */
-        self::assertFalse($day->isWeekday());
-    }
-
-    public function testDayOfWeekAllDaysHaveCorrectIsoValues(): void
-    {
-        /** @Given all days of the week in ISO 8601 order */
-        $days = DayOfWeek::cases();
-
-        /** @When inspecting their backing values */
-        $values = array_map(static fn(DayOfWeek $day): int => $day->value, $days);
-
-        /** @Then each day should map to its ISO 8601 numeric value */
-        self::assertSame([1, 2, 3, 4, 5, 6, 7], $values);
-    }
-
-    public function testDayOfWeekFromInstantOnMonday(): void
-    {
-        /** @Given an Instant on Monday 2026-02-16 */
-        $instant = Instant::fromString(value: '2026-02-16T10:00:00+00:00');
-
-        /** @When deriving the day of the week from the Instant */
-        $day = DayOfWeek::fromInstant(instant: $instant);
-
-        /** @Then the day should be Monday */
-        self::assertSame(DayOfWeek::Monday, $day);
-    }
-
-    public function testDayOfWeekFromInstantOnTuesday(): void
-    {
-        /** @Given an Instant on Tuesday 2026-02-17 */
-        $instant = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
-
-        /** @When deriving the day of the week from the Instant */
-        $day = DayOfWeek::fromInstant(instant: $instant);
-
-        /** @Then the day should be Tuesday */
-        self::assertSame(DayOfWeek::Tuesday, $day);
-    }
-
-    public function testDayOfWeekFromInstantOnWednesday(): void
-    {
-        /** @Given an Instant on Wednesday 2026-02-18 */
-        $instant = Instant::fromString(value: '2026-02-18T14:30:00+00:00');
-
-        /** @When deriving the day of the week from the Instant */
-        $day = DayOfWeek::fromInstant(instant: $instant);
-
-        /** @Then the day should be Wednesday */
-        self::assertSame(DayOfWeek::Wednesday, $day);
-    }
-
-    public function testDayOfWeekFromInstantOnThursday(): void
-    {
-        /** @Given an Instant at midnight on Thursday 2026-02-19 */
-        $instant = Instant::fromString(value: '2026-02-19T00:00:00+00:00');
-
-        /** @When deriving the day of the week from the Instant */
-        $day = DayOfWeek::fromInstant(instant: $instant);
-
-        /** @Then the day should be Thursday */
-        self::assertSame(DayOfWeek::Thursday, $day);
-    }
-
-    public function testDayOfWeekFromInstantOnFriday(): void
-    {
-        /** @Given an Instant on Friday 2026-02-20 */
-        $instant = Instant::fromString(value: '2026-02-20T17:00:00+00:00');
-
-        /** @When deriving the day of the week from the Instant */
-        $day = DayOfWeek::fromInstant(instant: $instant);
-
-        /** @Then the day should be Friday */
-        self::assertSame(DayOfWeek::Friday, $day);
-    }
-
-    public function testDayOfWeekFromInstantOnSaturday(): void
-    {
-        /** @Given an Instant on Saturday 2026-02-21 */
-        $instant = Instant::fromString(value: '2026-02-21T08:00:00+00:00');
-
-        /** @When deriving the day of the week from the Instant */
-        $day = DayOfWeek::fromInstant(instant: $instant);
-
-        /** @Then the day should be Saturday */
-        self::assertSame(DayOfWeek::Saturday, $day);
-    }
-
-    public function testDayOfWeekFromInstantOnSunday(): void
-    {
-        /** @Given an Instant on Sunday 2026-02-22 */
-        $instant = Instant::fromString(value: '2026-02-22T23:59:59+00:00');
-
-        /** @When deriving the day of the week from the Instant */
-        $day = DayOfWeek::fromInstant(instant: $instant);
-
-        /** @Then the day should be Sunday */
-        self::assertSame(DayOfWeek::Sunday, $day);
-    }
-
-    public function testDayOfWeekWeekdayAndWeekendAreMutuallyExclusive(): void
-    {
-        /** @Given all days of the week */
-        $days = DayOfWeek::cases();
-
-        /** @When checking that weekday and weekend are mutually exclusive for each day */
-        $conflicts = array_filter(
-            $days,
-            static fn(DayOfWeek $day): bool => $day->isWeekday() === $day->isWeekend()
-        );
-
-        /** @Then no day should be both a weekday and a weekend day */
-        self::assertCount(0, $conflicts);
-    }
-
-    public function testDayOfWeekExactlyFiveWeekdays(): void
-    {
-        /** @Given all days of the week */
-        $allDays = DayOfWeek::cases();
-
-        /** @When filtering for weekdays */
-        $weekdays = array_filter(
-            $allDays,
-            static fn(DayOfWeek $day): bool => $day->isWeekday()
-        );
-
-        /** @Then there should be exactly 5 weekdays */
-        self::assertCount(5, $weekdays);
-    }
-
-    public function testDayOfWeekExactlyTwoWeekendDays(): void
+    public function testIsWeekendThenMatchesExactlyTwoDays(): void
     {
         /** @Given all days of the week */
         $allDays = DayOfWeek::cases();
@@ -212,8 +68,38 @@ final class DayOfWeekTest extends TestCase
         self::assertCount(2, $weekends);
     }
 
+    public function testIsWeekendWhenSundayThenReturnsTrue(): void
+    {
+        /** @Given Sunday as the day of the week */
+        $day = DayOfWeek::Sunday;
+
+        /** @When checking if it is a weekend day */
+        $isWeekend = $day->isWeekend();
+
+        /** @Then it should be a weekend day */
+        self::assertTrue($isWeekend);
+
+        /** @And it should not be a weekday */
+        self::assertFalse($day->isWeekday());
+    }
+
+    public function testIsWeekdayThenMatchesExactlyFiveDays(): void
+    {
+        /** @Given all days of the week */
+        $allDays = DayOfWeek::cases();
+
+        /** @When filtering for weekdays */
+        $weekdays = array_filter(
+            $allDays,
+            static fn(DayOfWeek $day): bool => $day->isWeekday()
+        );
+
+        /** @Then there should be exactly 5 weekdays */
+        self::assertCount(5, $weekdays);
+    }
+
     #[DataProvider('sameDayDistanceDataProvider')]
-    public function testDayOfWeekDistanceToSameDayReturnsZero(DayOfWeek $day): void
+    public function testDistanceToWhenSameDayThenReturnsZero(DayOfWeek $day): void
     {
         /** @Given the same day of the week */
 
@@ -224,21 +110,139 @@ final class DayOfWeekTest extends TestCase
         self::assertSame(0, $distance);
     }
 
-    #[DataProvider('forwardDistanceDataProvider')]
-    public function testDayOfWeekDistanceToForward(DayOfWeek $from, DayOfWeek $to, int $expectedDistance): void
+    public function testIsWeekendWhenSaturdayThenReturnsTrue(): void
     {
-        /** @Given a starting day and a target day */
+        /** @Given Saturday as the day of the week */
+        $day = DayOfWeek::Saturday;
+
+        /** @When checking if it is a weekend day */
+        $isWeekend = $day->isWeekend();
+
+        /** @Then it should be a weekend day */
+        self::assertTrue($isWeekend);
+
+        /** @And it should not be a weekday */
+        self::assertFalse($day->isWeekday());
+    }
+
+    public function testFromInstantWhenFridayThenReturnsFriday(): void
+    {
+        /** @Given an Instant on Friday 2026-02-20 */
+        $instant = Instant::fromString(value: '2026-02-20T17:00:00+00:00');
+
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
+        /** @Then the day should be Friday */
+        self::assertSame(DayOfWeek::Friday, $day);
+    }
+
+    public function testFromInstantWhenMondayThenReturnsMonday(): void
+    {
+        /** @Given an Instant on Monday 2026-02-16 */
+        $instant = Instant::fromString(value: '2026-02-16T10:00:00+00:00');
+
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
+        /** @Then the day should be Monday */
+        self::assertSame(DayOfWeek::Monday, $day);
+    }
+
+    public function testFromInstantWhenSundayThenReturnsSunday(): void
+    {
+        /** @Given an Instant on Sunday 2026-02-22 */
+        $instant = Instant::fromString(value: '2026-02-22T23:59:59+00:00');
+
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
+        /** @Then the day should be Sunday */
+        self::assertSame(DayOfWeek::Sunday, $day);
+    }
+
+    #[DataProvider('allPairsDistanceDataProvider')]
+    public function testDistanceToWhenAnyPairThenNeverExceedsSix(DayOfWeek $from, DayOfWeek $to): void
+    {
+        /** @Given any pair of days */
 
         /** @When computing the forward distance */
         $distance = $from->distanceTo(other: $to);
 
-        /** @Then the forward distance should match the expected value */
-        self::assertSame($expectedDistance, $distance);
+        /** @Then the distance should be in the range [0, 6] */
+        self::assertGreaterThanOrEqual(0, $distance);
+        self::assertLessThanOrEqual(6, $distance);
+    }
+
+    public function testFromInstantWhenTuesdayThenReturnsTuesday(): void
+    {
+        /** @Given an Instant on Tuesday 2026-02-17 */
+        $instant = Instant::fromString(value: '2026-02-17T10:30:00+00:00');
+
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
+        /** @Then the day should be Tuesday */
+        self::assertSame(DayOfWeek::Tuesday, $day);
+    }
+
+    public function testFromInstantWhenSaturdayThenReturnsSaturday(): void
+    {
+        /** @Given an Instant on Saturday 2026-02-21 */
+        $instant = Instant::fromString(value: '2026-02-21T08:00:00+00:00');
+
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
+        /** @Then the day should be Saturday */
+        self::assertSame(DayOfWeek::Saturday, $day);
+    }
+
+    public function testFromInstantWhenThursdayThenReturnsThursday(): void
+    {
+        /** @Given an Instant at midnight on Thursday 2026-02-19 */
+        $instant = Instant::fromString(value: '2026-02-19T00:00:00+00:00');
+
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
+        /** @Then the day should be Thursday */
+        self::assertSame(DayOfWeek::Thursday, $day);
+    }
+
+    public function testFromInstantWhenWednesdayThenReturnsWednesday(): void
+    {
+        /** @Given an Instant on Wednesday 2026-02-18 */
+        $instant = Instant::fromString(value: '2026-02-18T14:30:00+00:00');
+
+        /** @When deriving the day of the week from the Instant */
+        $day = DayOfWeek::fromInstant(instant: $instant);
+
+        /** @Then the day should be Wednesday */
+        self::assertSame(DayOfWeek::Wednesday, $day);
+    }
+
+    public function testIsWeekdayAndIsWeekendThenAreMutuallyExclusive(): void
+    {
+        /** @Given all days of the week */
+        $days = DayOfWeek::cases();
+
+        /** @When checking that weekday and weekend are mutually exclusive for each day */
+        $conflicts = array_filter(
+            $days,
+            static fn(DayOfWeek $day): bool => $day->isWeekday() === $day->isWeekend()
+        );
+
+        /** @Then no day should be both a weekday and a weekend day */
+        self::assertCount(0, $conflicts);
     }
 
     #[DataProvider('wrapAroundDistanceDataProvider')]
-    public function testDayOfWeekDistanceToWrapsAroundWeek(DayOfWeek $from, DayOfWeek $to, int $expectedDistance): void
-    {
+    public function testDistanceToWhenTargetIsBeforeStartThenWrapsAroundWeek(
+        DayOfWeek $from,
+        DayOfWeek $to,
+        int $expectedDistance
+    ): void {
         /** @Given a starting day that is after the target day in the week */
 
         /** @When computing the forward distance */
@@ -248,8 +252,23 @@ final class DayOfWeekTest extends TestCase
         self::assertSame($expectedDistance, $distance);
     }
 
+    #[DataProvider('forwardDistanceDataProvider')]
+    public function testDistanceToWhenTargetIsForwardThenReturnsForwardDistance(
+        DayOfWeek $from,
+        DayOfWeek $to,
+        int $expectedDistance
+    ): void {
+        /** @Given a starting day and a target day */
+
+        /** @When computing the forward distance */
+        $distance = $from->distanceTo(other: $to);
+
+        /** @Then the forward distance should match the expected value */
+        self::assertSame($expectedDistance, $distance);
+    }
+
     #[DataProvider('asymmetricDistanceDataProvider')]
-    public function testDayOfWeekDistanceToIsNotSymmetric(
+    public function testDistanceToWhenComputedInBothDirectionsThenIsNotSymmetric(
         DayOfWeek $from,
         DayOfWeek $to,
         int $expectedForward,
@@ -269,32 +288,6 @@ final class DayOfWeekTest extends TestCase
 
         /** @And together they should complete a full week */
         self::assertSame(7, $expectedForward + $expectedBackward);
-    }
-
-    #[DataProvider('allPairsDistanceDataProvider')]
-    public function testDayOfWeekDistanceToNeverExceedsSix(DayOfWeek $from, DayOfWeek $to): void
-    {
-        /** @Given any pair of days */
-
-        /** @When computing the forward distance */
-        $distance = $from->distanceTo(other: $to);
-
-        /** @Then the distance should be in the range [0, 6] */
-        self::assertGreaterThanOrEqual(0, $distance);
-        self::assertLessThanOrEqual(6, $distance);
-    }
-
-    public static function sameDayDistanceDataProvider(): array
-    {
-        return [
-            'Monday to Monday'       => ['day' => DayOfWeek::Monday],
-            'Tuesday to Tuesday'     => ['day' => DayOfWeek::Tuesday],
-            'Wednesday to Wednesday' => ['day' => DayOfWeek::Wednesday],
-            'Thursday to Thursday'   => ['day' => DayOfWeek::Thursday],
-            'Friday to Friday'       => ['day' => DayOfWeek::Friday],
-            'Saturday to Saturday'   => ['day' => DayOfWeek::Saturday],
-            'Sunday to Sunday'       => ['day' => DayOfWeek::Sunday]
-        ];
     }
 
     public static function forwardDistanceDataProvider(): array
@@ -343,37 +336,34 @@ final class DayOfWeekTest extends TestCase
         ];
     }
 
-    public static function wrapAroundDistanceDataProvider(): array
+    public static function sameDayDistanceDataProvider(): array
     {
         return [
-            'Friday to Monday'     => ['from' => DayOfWeek::Friday, 'to' => DayOfWeek::Monday, 'expectedDistance' => 3],
-            'Saturday to Monday'   => [
-                'from'             => DayOfWeek::Saturday,
-                'to'               => DayOfWeek::Monday,
-                'expectedDistance' => 2
-            ],
-            'Sunday to Monday'     => ['from' => DayOfWeek::Sunday, 'to' => DayOfWeek::Monday, 'expectedDistance' => 1],
-            'Wednesday to Monday'  => [
-                'from'             => DayOfWeek::Wednesday,
-                'to'               => DayOfWeek::Monday,
-                'expectedDistance' => 5
-            ],
-            'Saturday to Thursday' => [
-                'from'             => DayOfWeek::Saturday,
-                'to'               => DayOfWeek::Thursday,
-                'expectedDistance' => 5
-            ],
-            'Thursday to Tuesday'  => [
-                'from'             => DayOfWeek::Thursday,
-                'to'               => DayOfWeek::Tuesday,
-                'expectedDistance' => 5
-            ],
-            'Sunday to Wednesday'  => [
-                'from'             => DayOfWeek::Sunday,
-                'to'               => DayOfWeek::Wednesday,
-                'expectedDistance' => 3
-            ]
+            'Monday to Monday'       => ['day' => DayOfWeek::Monday],
+            'Tuesday to Tuesday'     => ['day' => DayOfWeek::Tuesday],
+            'Wednesday to Wednesday' => ['day' => DayOfWeek::Wednesday],
+            'Thursday to Thursday'   => ['day' => DayOfWeek::Thursday],
+            'Friday to Friday'       => ['day' => DayOfWeek::Friday],
+            'Saturday to Saturday'   => ['day' => DayOfWeek::Saturday],
+            'Sunday to Sunday'       => ['day' => DayOfWeek::Sunday]
         ];
+    }
+
+    public static function allPairsDistanceDataProvider(): array
+    {
+        $pairs = [];
+
+        $days = DayOfWeek::cases();
+
+        foreach ($days as $from) {
+            foreach ($days as $to) {
+                $template = '%s to %s';
+                $label = sprintf($template, $from->name, $to->name);
+                $pairs[$label] = ['from' => $from, 'to' => $to];
+            }
+        }
+
+        return $pairs;
     }
 
     public static function asymmetricDistanceDataProvider(): array
@@ -406,19 +396,36 @@ final class DayOfWeekTest extends TestCase
         ];
     }
 
-    public static function allPairsDistanceDataProvider(): array
+    public static function wrapAroundDistanceDataProvider(): array
     {
-        $pairs = [];
-
-        $days = DayOfWeek::cases();
-
-        foreach ($days as $from) {
-            foreach ($days as $to) {
-                $label = sprintf('%s to %s', $from->name, $to->name);
-                $pairs[$label] = ['from' => $from, 'to' => $to];
-            }
-        }
-
-        return $pairs;
+        return [
+            'Friday to Monday'     => ['from' => DayOfWeek::Friday, 'to' => DayOfWeek::Monday, 'expectedDistance' => 3],
+            'Saturday to Monday'   => [
+                'from'             => DayOfWeek::Saturday,
+                'to'               => DayOfWeek::Monday,
+                'expectedDistance' => 2
+            ],
+            'Sunday to Monday'     => ['from' => DayOfWeek::Sunday, 'to' => DayOfWeek::Monday, 'expectedDistance' => 1],
+            'Wednesday to Monday'  => [
+                'from'             => DayOfWeek::Wednesday,
+                'to'               => DayOfWeek::Monday,
+                'expectedDistance' => 5
+            ],
+            'Saturday to Thursday' => [
+                'from'             => DayOfWeek::Saturday,
+                'to'               => DayOfWeek::Thursday,
+                'expectedDistance' => 5
+            ],
+            'Thursday to Tuesday'  => [
+                'from'             => DayOfWeek::Thursday,
+                'to'               => DayOfWeek::Tuesday,
+                'expectedDistance' => 5
+            ],
+            'Sunday to Wednesday'  => [
+                'from'             => DayOfWeek::Sunday,
+                'to'               => DayOfWeek::Wednesday,
+                'expectedDistance' => 3
+            ]
+        ];
     }
 }

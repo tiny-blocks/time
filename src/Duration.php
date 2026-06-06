@@ -36,27 +36,15 @@ final readonly class Duration implements ValueObject
     }
 
     /**
-     * Creates a Duration from a number of seconds.
+     * Creates a Duration from a number of days.
      *
-     * @param int $seconds The number of seconds (must be non-negative).
+     * @param int $days The number of days (must be non-negative).
      * @return Duration The created Duration.
      * @throws InvalidSeconds If the value is negative.
      */
-    public static function fromSeconds(int $seconds): Duration
+    public static function fromDays(int $days): Duration
     {
-        return new Duration(seconds: Seconds::from(value: $seconds));
-    }
-
-    /**
-     * Creates a Duration from a number of minutes.
-     *
-     * @param int $minutes The number of minutes (must be non-negative).
-     * @return Duration The created Duration.
-     * @throws InvalidSeconds If the value is negative.
-     */
-    public static function fromMinutes(int $minutes): Duration
-    {
-        return new Duration(seconds: Seconds::from(value: $minutes * self::SECONDS_PER_MINUTE));
+        return new Duration(seconds: Seconds::from(value: $days * self::SECONDS_PER_DAY));
     }
 
     /**
@@ -72,15 +60,27 @@ final readonly class Duration implements ValueObject
     }
 
     /**
-     * Creates a Duration from a number of days.
+     * Creates a Duration from a number of minutes.
      *
-     * @param int $days The number of days (must be non-negative).
+     * @param int $minutes The number of minutes (must be non-negative).
      * @return Duration The created Duration.
      * @throws InvalidSeconds If the value is negative.
      */
-    public static function fromDays(int $days): Duration
+    public static function fromMinutes(int $minutes): Duration
     {
-        return new Duration(seconds: Seconds::from(value: $days * self::SECONDS_PER_DAY));
+        return new Duration(seconds: Seconds::from(value: $minutes * self::SECONDS_PER_MINUTE));
+    }
+
+    /**
+     * Creates a Duration from a number of seconds.
+     *
+     * @param int $seconds The number of seconds (must be non-negative).
+     * @return Duration The created Duration.
+     * @throws InvalidSeconds If the value is negative.
+     */
+    public static function fromSeconds(int $seconds): Duration
+    {
+        return new Duration(seconds: Seconds::from(value: $seconds));
     }
 
     /**
@@ -120,7 +120,7 @@ final readonly class Duration implements ValueObject
     }
 
     /**
-     * Returns true if this Duration has zero length.
+     * Tells whether this Duration has zero length.
      *
      * @return bool True if this Duration is zero seconds.
      */
@@ -130,45 +130,13 @@ final readonly class Duration implements ValueObject
     }
 
     /**
-     * Returns true if this Duration is strictly greater than another.
+     * Returns the total number of whole days in this Duration.
      *
-     * @param Duration $other The Duration to compare against.
-     * @return bool True if this Duration is longer.
+     * @return int The number of whole days.
      */
-    public function isGreaterThan(Duration $other): bool
+    public function toDays(): int
     {
-        return $this->seconds->isGreaterThan(other: $other->seconds);
-    }
-
-    /**
-     * Returns true if this Duration is strictly less than another.
-     *
-     * @param Duration $other The Duration to compare against.
-     * @return bool True if this Duration is shorter.
-     */
-    public function isLessThan(Duration $other): bool
-    {
-        return $this->seconds->isLessThan(other: $other->seconds);
-    }
-
-    /**
-     * Returns the total number of seconds in this Duration.
-     *
-     * @return int The number of seconds.
-     */
-    public function toSeconds(): int
-    {
-        return $this->seconds->value;
-    }
-
-    /**
-     * Returns the total number of whole minutes in this Duration.
-     *
-     * @return int The number of whole minutes.
-     */
-    public function toMinutes(): int
-    {
-        return $this->seconds->divideByScalar(divisor: self::SECONDS_PER_MINUTE);
+        return $this->seconds->divideByScalar(divisor: self::SECONDS_PER_DAY);
     }
 
     /**
@@ -182,12 +150,44 @@ final readonly class Duration implements ValueObject
     }
 
     /**
-     * Returns the total number of whole days in this Duration.
+     * Returns the total number of whole minutes in this Duration.
      *
-     * @return int The number of whole days.
+     * @return int The number of whole minutes.
      */
-    public function toDays(): int
+    public function toMinutes(): int
     {
-        return $this->seconds->divideByScalar(divisor: self::SECONDS_PER_DAY);
+        return $this->seconds->divideByScalar(divisor: self::SECONDS_PER_MINUTE);
+    }
+
+    /**
+     * Returns the total number of seconds in this Duration.
+     *
+     * @return int The number of seconds.
+     */
+    public function toSeconds(): int
+    {
+        return $this->seconds->value;
+    }
+
+    /**
+     * Tells whether this Duration is strictly less than another.
+     *
+     * @param Duration $other The Duration to compare against.
+     * @return bool True if this Duration is shorter.
+     */
+    public function isLessThan(Duration $other): bool
+    {
+        return $this->seconds->isLessThan(other: $other->seconds);
+    }
+
+    /**
+     * Tells whether this Duration is strictly greater than another.
+     *
+     * @param Duration $other The Duration to compare against.
+     * @return bool True if this Duration is longer.
+     */
+    public function isGreaterThan(Duration $other): bool
+    {
+        return $this->seconds->isGreaterThan(other: $other->seconds);
     }
 }

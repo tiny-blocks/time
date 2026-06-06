@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TinyBlocks\Time;
 
 use DateTimeImmutable;
+use TinyBlocks\Mapper\ScalarCodec;
 use TinyBlocks\Time\Exceptions\InvalidLocalDate;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
@@ -13,12 +14,13 @@ use TinyBlocks\Vo\ValueObjectBehavior;
  * Represents a calendar date (year, month, day) without time and without timezone.
  * Two instances of this type for the same date are always equal by value.
  */
+#[ScalarCodec(decode: 'fromString', encode: 'toIso8601')]
 final readonly class LocalDate implements ValueObject
 {
     use ValueObjectBehavior;
 
-    private const int MIN_YEAR = 1;
     private const int MAX_YEAR = 9999;
+    private const int MIN_YEAR = 1;
     private const string DATE_FORMAT = 'Y-m-d';
     private const string DATE_PATTERN = '/^\d{4}-\d{2}-\d{2}$/';
 
@@ -125,21 +127,6 @@ final readonly class LocalDate implements ValueObject
     }
 
     /**
-     * Returns a copy of this date shifted backward by the given number of days.
-     * A negative count shifts forward.
-     *
-     * @param int $days The number of days to subtract (may be negative).
-     * @return LocalDate A new LocalDate shifted backward by the given count.
-     */
-    public function minusDays(int $days): LocalDate
-    {
-        $template = '%+d days';
-        $modified = $this->date->modify(sprintf($template, -$days));
-
-        return new LocalDate(date: $modified);
-    }
-
-    /**
      * Returns a copy of this date shifted forward by the given number of days.
      * A negative count shifts backward.
      *
@@ -162,6 +149,21 @@ final readonly class LocalDate implements ValueObject
     public function dayOfWeek(): DayOfWeek
     {
         return DayOfWeek::from((int)$this->date->format('N'));
+    }
+
+    /**
+     * Returns a copy of this date shifted backward by the given number of days.
+     * A negative count shifts forward.
+     *
+     * @param int $days The number of days to subtract (may be negative).
+     * @return LocalDate A new LocalDate shifted backward by the given count.
+     */
+    public function minusDays(int $days): LocalDate
+    {
+        $template = '%+d days';
+        $modified = $this->date->modify(sprintf($template, -$days));
+
+        return new LocalDate(date: $modified);
     }
 
     /**

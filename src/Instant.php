@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TinyBlocks\Time;
 
 use DateTimeImmutable;
+use TinyBlocks\Mapper\ScalarCodec;
 use TinyBlocks\Time\Exceptions\InvalidInstant;
 use TinyBlocks\Time\Internal\TextDecoder;
 use TinyBlocks\Vo\ValueObject;
@@ -13,6 +14,7 @@ use TinyBlocks\Vo\ValueObjectBehavior;
 /**
  * Represents a single point on the timeline, always normalized to UTC with microsecond precision.
  */
+#[ScalarCodec(decode: 'fromString', encode: 'toIso8601')]
 final readonly class Instant implements ValueObject
 {
     use ValueObjectBehavior;
@@ -97,17 +99,14 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Returns the Duration between this instant and another.
-     * The result is always non-negative (absolute distance).
+     * Tells whether this instant is strictly after the other.
      *
-     * @param Instant $other The instant to measure the distance to.
-     * @return Duration The absolute duration between the two instants.
+     * @param Instant $other The instant to compare against.
+     * @return bool True if this instant follows the other.
      */
-    public function durationUntil(Instant $other): Duration
+    public function isAfter(Instant $other): bool
     {
-        $difference = abs($this->datetime->getTimestamp() - $other->datetime->getTimestamp());
-
-        return Duration::fromSeconds(seconds: $difference);
+        return $this->datetime > $other->datetime;
     }
 
     /**
@@ -122,47 +121,14 @@ final readonly class Instant implements ValueObject
     }
 
     /**
-     * Tells whether this instant is strictly after the other.
-     *
-     * @param Instant $other The instant to compare against.
-     * @return bool True if this instant follows the other.
-     */
-    public function isAfter(Instant $other): bool
-    {
-        return $this->datetime > $other->datetime;
-    }
-
-    /**
-     * Tells whether this instant is before or at the same moment as the other.
-     *
-     * @param Instant $other The instant to compare against.
-     * @return bool True if this instant is at or before the other.
-     */
-    public function isBeforeOrEqual(Instant $other): bool
-    {
-        return $this->datetime <= $other->datetime;
-    }
-
-    /**
-     * Tells whether this instant is after or at the same moment as the other.
-     *
-     * @param Instant $other The instant to compare against.
-     * @return bool True if this instant is at or after the other.
-     */
-    public function isAfterOrEqual(Instant $other): bool
-    {
-        return $this->datetime >= $other->datetime;
-    }
-
-    /**
      * Returns the Instant as an ISO 8601 string in UTC at the chosen sub-second precision.
      *
      * The output always carries the +00:00 offset and is composed of a date, a time, and an
      * optional fractional-seconds component determined by the precision argument:
      *
-     *  - Precision::Seconds (default) — no fractional component, e.g. 2026-02-17T10:30:00+00:00.
-     *  - Precision::Milliseconds      — three fractional digits, e.g. 2026-02-17T08:27:21.106+00:00.
-     *  - Precision::Microseconds      — six fractional digits, e.g. 2026-02-17T08:27:21.106011+00:00.
+     *  - Precision::Seconds (default): no fractional component, e.g. 2026-02-17T10:30:00+00:00.
+     *  - Precision::Milliseconds: three fractional digits, e.g. 2026-02-17T08:27:21.106+00:00.
+     *  - Precision::Microseconds: six fractional digits, e.g. 2026-02-17T08:27:21.106011+00:00.
      *
      * Use Microseconds when interoperating with stores that hold sub-second precision (e.g. a
      * TIMESTAMP(6) column). Use Seconds for human-facing logs or APIs that do not carry
@@ -203,6 +169,20 @@ final readonly class Instant implements ValueObject
     }
 
     /**
+     * Returns the Duration between this instant and another.
+     * The result is always non-negative (absolute distance).
+     *
+     * @param Instant $other The instant to measure the distance to.
+     * @return Duration The absolute duration between the two instants.
+     */
+    public function durationUntil(Instant $other): Duration
+    {
+        $difference = abs($this->datetime->getTimestamp() - $other->datetime->getTimestamp());
+
+        return Duration::fromSeconds(seconds: $difference);
+    }
+
+    /**
      * Returns the number of seconds since the Unix epoch.
      *
      * @return int The Unix timestamp in seconds.
@@ -210,6 +190,28 @@ final readonly class Instant implements ValueObject
     public function toUnixSeconds(): int
     {
         return $this->datetime->getTimestamp();
+    }
+
+    /**
+     * Tells whether this instant is after or at the same moment as the other.
+     *
+     * @param Instant $other The instant to compare against.
+     * @return bool True if this instant is at or after the other.
+     */
+    public function isAfterOrEqual(Instant $other): bool
+    {
+        return $this->datetime >= $other->datetime;
+    }
+
+    /**
+     * Tells whether this instant is before or at the same moment as the other.
+     *
+     * @param Instant $other The instant to compare against.
+     * @return bool True if this instant is at or before the other.
+     */
+    public function isBeforeOrEqual(Instant $other): bool
+    {
+        return $this->datetime <= $other->datetime;
     }
 
     /**

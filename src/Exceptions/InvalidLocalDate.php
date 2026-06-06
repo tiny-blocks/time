@@ -6,6 +6,9 @@ namespace TinyBlocks\Time\Exceptions;
 
 use InvalidArgumentException;
 
+/**
+ * Raised when a value or set of components does not form a valid calendar date.
+ */
 final class InvalidLocalDate extends InvalidArgumentException
 {
     public static function becauseValueIsInvalid(string $value): InvalidLocalDate

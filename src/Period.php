@@ -55,16 +55,6 @@ final readonly class Period implements ValueObject
     }
 
     /**
-     * Returns the Duration of this period.
-     *
-     * @return Duration The time elapsed from start to end.
-     */
-    public function duration(): Duration
-    {
-        return $this->from->durationUntil(other: $this->to);
-    }
-
-    /**
      * Checks whether the given instant falls within this period (inclusive start, exclusive end).
      *
      * @param Instant $instant The instant to check.
@@ -74,6 +64,16 @@ final readonly class Period implements ValueObject
     {
         return $instant->isAfterOrEqual(other: $this->from)
             && $instant->isBefore(other: $this->to);
+    }
+
+    /**
+     * Returns the Duration of this period.
+     *
+     * @return Duration The time elapsed from start to end.
+     */
+    public function duration(): Duration
+    {
+        return $this->from->durationUntil(other: $this->to);
     }
 
     /**

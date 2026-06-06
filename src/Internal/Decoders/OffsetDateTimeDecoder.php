@@ -18,26 +18,22 @@ final readonly class OffsetDateTimeDecoder implements Decoder
     {
         $utc = new DateTimeZone(timezone: 'UTC');
 
-        if (preg_match(self::PATTERN, $value) === 1) {
-            $parsed = DateTimeImmutable::createFromFormat(self::FORMAT, $value);
+        $format = match (true) {
+            preg_match(self::PATTERN, $value) === 1       => self::FORMAT,
+            preg_match(self::PATTERN_MICRO, $value) === 1 => self::FORMAT_MICRO,
+            default                                       => null
+        };
 
-            if ($parsed === false || DateTimeImmutable::getLastErrors() !== false) {
-                return null;
-            }
-
-            return $parsed->setTimezone($utc);
+        if ($format === null) {
+            return null;
         }
 
-        if (preg_match(self::PATTERN_MICRO, $value) === 1) {
-            $parsed = DateTimeImmutable::createFromFormat(self::FORMAT_MICRO, $value);
+        $parsed = DateTimeImmutable::createFromFormat($format, $value);
 
-            if ($parsed === false || DateTimeImmutable::getLastErrors() !== false) {
-                return null;
-            }
-
-            return $parsed->setTimezone($utc);
+        if ($parsed === false || DateTimeImmutable::getLastErrors() !== false) {
+            return null;
         }
 
-        return null;
+        return $parsed->setTimezone($utc);
     }
 }

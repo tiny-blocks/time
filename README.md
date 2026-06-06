@@ -14,12 +14,20 @@
         - [Measuring distance between instants](#measuring-distance-between-instants)
         - [Comparing instants](#comparing-instants)
         - [Emitting with sub-second precision](#emitting-with-sub-second-precision)
+        - [Serializing with the mapper](#serializing-with-the-mapper)
     + [Duration](#duration)
         - [Creating durations](#creating-durations)
         - [Arithmetic](#arithmetic)
         - [Division](#division)
         - [Comparing durations](#comparing-durations)
         - [Converting to other units](#converting-to-other-units)
+    + [MonotonicClock](#monotonicclock)
+        - [Reading the current nanoseconds](#reading-the-current-nanoseconds)
+        - [Measuring an elapsed window](#measuring-an-elapsed-window)
+    + [Stopwatch](#stopwatch)
+        - [Starting a stopwatch](#starting-a-stopwatch)
+        - [Reading the elapsed interval](#reading-the-elapsed-interval)
+        - [Reading the elapsed interval more than once](#reading-the-elapsed-interval-more-than-once)
     + [Period](#period)
         - [Creating from two instants](#creating-from-two-instants)
         - [Creating from a start and duration](#creating-from-a-start-and-duration)
@@ -45,6 +53,7 @@
         - [Projecting an Instant](#projecting-an-instant)
         - [Comparing dates](#comparing-dates)
         - [Day arithmetic](#day-arithmetic)
+        - [Serializing with the mapper](#serializing-with-the-mapper-1)
     + [Timezone](#timezone)
         - [Creating from an identifier](#creating-from-an-identifier)
         - [Creating a UTC timezone](#creating-a-utc-timezone)
@@ -63,9 +72,9 @@
 ## Overview
 
 Models time as immutable value objects for PHP, including instants, durations, periods, timezones, time-of-day,
-local dates, and day-of-week. All instants are normalized to UTC with microsecond precision, with strict parsing, formatting, and
-arithmetic operations. Declared as `final readonly class` for language-level immutability, with structural equality
-provided by the tiny-blocks value-object contract.
+local dates, and day-of-week. All instants are normalized to UTC with microsecond precision, with strict parsing,
+formatting, and arithmetic operations. Declared as `final readonly class` for language-level immutability, with
+structural equality provided by the tiny-blocks value-object contract.
 
 ## Installation
 
@@ -249,10 +258,38 @@ use TinyBlocks\Time\Precision;
 
 $instant = Instant::fromString(value: '2026-05-23T12:55:10.272097+00:00');
 
-$instant->toIso8601();                               # 2026-05-23T12:55:10+00:00
-$instant->toIso8601(precision: Precision::Seconds);  # 2026-05-23T12:55:10+00:00
+$instant->toIso8601();                                   # 2026-05-23T12:55:10+00:00
+$instant->toIso8601(precision: Precision::Seconds);      # 2026-05-23T12:55:10+00:00
 $instant->toIso8601(precision: Precision::Microseconds); # 2026-05-23T12:55:10.272097+00:00
 $instant->toIso8601(precision: Precision::Milliseconds); # 2026-05-23T12:55:10.272+00:00
+```
+
+#### Serializing with the mapper
+
+`Instant` carries a `#[ScalarCodec]`, so `tiny-blocks/mapper` rebuilds it from an ISO 8601 string and writes it back to
+the same form, with no mapping to register. As a field on a larger object the value stays a scalar at second precision,
+matching the default of `toIso8601()`.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Mapper\Mapper;
+use TinyBlocks\Time\Instant;
+
+final readonly class Event
+{
+    public function __construct(public Instant $occurredAt, public string $name)
+    {
+    }
+}
+
+$mapper = Mapper::create();
+
+$event = $mapper->toObject(type: Event::class, source: ['occurredAt' => '2026-02-17T10:30:00+00:00', 'name' => 'launch']);
+
+$mapper->toArray(source: $event); # ['occurredAt' => '2026-02-17T10:30:00+00:00', 'name' => 'launch']
 ```
 
 ### Duration
@@ -362,6 +399,130 @@ $duration->toSeconds(); # 5400
 $duration->toMinutes(); # 90
 $duration->toHours();   # 1
 $duration->toDays();    # 0
+```
+
+### MonotonicClock
+
+A `MonotonicClock` exposes a high-resolution counter for measuring elapsed time, conceptually
+distinct from `Duration`: `Duration` is a wall-clock quantity measured in whole seconds, while
+a monotonic reading is an opaque nanosecond counter whose absolute value carries no calendar
+meaning and is only useful as the delta between two readings on the same clock. The default
+`SystemMonotonicClock` implementation is backed by PHP's `hrtime(true)`.
+
+#### Reading the current nanoseconds
+
+Returns the current monotonic reading as an integer nanosecond count. The value has no calendar
+meaning. Treat it as an opaque counter and only compare it to another reading from the same
+clock.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\SystemMonotonicClock;
+
+$clock = new SystemMonotonicClock();
+
+$clock->nanoseconds(); # 12345678901234 (an opaque counter, not a calendar value)
+```
+
+#### Measuring an elapsed window
+
+Subtract two successive readings on the same clock to obtain the elapsed interval in
+nanoseconds. Readings are guaranteed to be non-decreasing.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\SystemMonotonicClock;
+
+$clock = new SystemMonotonicClock();
+
+$start = $clock->nanoseconds();
+
+# Perform the operation whose latency is being measured.
+usleep(1000);
+
+$elapsedNanos = $clock->nanoseconds() - $start;
+```
+
+### Stopwatch
+
+A `Stopwatch` separates the act of measuring from the value being measured. It captures a
+starting reading from a `MonotonicClock` and exposes the accumulated interval as an `Elapsed`
+value object. The clock is injected explicitly so the time source stays under the caller's
+control, and reading the interval is idempotent: invoking `elapsed()` more than once returns
+successive measurements from the same starting reading.
+
+`Elapsed` is a pure value object expressed in nanoseconds. It is distinct from `Duration`, which
+models wall-clock seconds, and nanosecond and second granularities are kept in separate types so
+the intent of each measurement stays explicit at the call site.
+
+#### Starting a stopwatch
+
+Captures the current reading of the provided monotonic clock and returns a stopwatch anchored to
+that moment.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Stopwatch;
+use TinyBlocks\Time\SystemMonotonicClock;
+
+$stopwatch = Stopwatch::start(clock: new SystemMonotonicClock());
+```
+
+#### Reading the elapsed interval
+
+Returns an `Elapsed` measuring the interval between the starting reading and the current reading
+of the same clock. `toMilliseconds()` converts the nanosecond count to milliseconds rounded to
+two decimal places.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Stopwatch;
+use TinyBlocks\Time\SystemMonotonicClock;
+
+$stopwatch = Stopwatch::start(clock: new SystemMonotonicClock());
+
+# Perform the operation whose latency is being measured.
+usleep(1500);
+
+$stopwatch->elapsed()->toMilliseconds(); # 1.5
+```
+
+#### Reading the elapsed interval more than once
+
+The starting reading is captured once and never changes. Each call to `elapsed()` returns a new
+`Elapsed` measured from that same anchor, so successive calls report a non-decreasing series of
+intervals.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Stopwatch;
+use TinyBlocks\Time\SystemMonotonicClock;
+
+$stopwatch = Stopwatch::start(clock: new SystemMonotonicClock());
+
+usleep(1000);
+$firstReading = $stopwatch->elapsed();
+
+usleep(1000);
+$secondReading = $stopwatch->elapsed();
+
+$firstReading->toMilliseconds();  # approximately 1.0
+$secondReading->toMilliseconds(); # approximately 2.0
 ```
 
 ### Period
@@ -777,6 +938,33 @@ $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
 $date->plusDays(days: 10)->toIso8601();  # 2026-06-02
 $date->minusDays(days: 30)->toIso8601(); # 2026-04-23
+```
+
+#### Serializing with the mapper
+
+`LocalDate` carries a `#[ScalarCodec]`, so `tiny-blocks/mapper` rebuilds it from a `YYYY-MM-DD` string and writes it
+back to the same date-only form, instead of widening to a full datetime.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Mapper\Mapper;
+use TinyBlocks\Time\LocalDate;
+
+final readonly class Holiday
+{
+    public function __construct(public LocalDate $date, public string $name)
+    {
+    }
+}
+
+$mapper = Mapper::create();
+
+$holiday = $mapper->toObject(type: Holiday::class, source: ['date' => '2026-05-23', 'name' => 'Labor Day']);
+
+$mapper->toArray(source: $holiday); # ['date' => '2026-05-23', 'name' => 'Labor Day']
 ```
 
 ### Timezone

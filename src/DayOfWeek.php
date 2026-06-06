@@ -29,11 +29,11 @@ enum DayOfWeek: int
     {
         $isoDay = (int)$instant->toDateTimeImmutable()->format('N');
 
-        return DayOfWeek::from(value: $isoDay);
+        return DayOfWeek::from($isoDay);
     }
 
     /**
-     * Checks whether this day falls on a weekday (Monday through Friday).
+     * Tells whether this day falls on a weekday (Monday through Friday).
      *
      * @return bool True if this is a weekday.
      */
@@ -43,7 +43,7 @@ enum DayOfWeek: int
     }
 
     /**
-     * Checks whether this day falls on a weekend (Saturday or Sunday).
+     * Tells whether this day falls on a weekend (Saturday or Sunday).
      *
      * @return bool True if this is a weekend day.
      */
