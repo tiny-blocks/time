@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace TinyBlocks\Time;
 
 use Countable;
+use TinyBlocks\Collection\Collectible;
+use TinyBlocks\Collection\Collection;
+use TinyBlocks\Collection\KeyPreservation;
 use TinyBlocks\Time\Exceptions\InvalidTimezone;
 
 /**
@@ -12,11 +15,8 @@ use TinyBlocks\Time\Exceptions\InvalidTimezone;
  */
 final readonly class Timezones implements Countable
 {
-    private array $items;
-
-    private function __construct(array $items)
+    private function __construct(private Collectible $timezones)
     {
-        $this->items = $items;
     }
 
     /**
@@ -27,7 +27,7 @@ final readonly class Timezones implements Countable
      */
     public static function from(Timezone ...$timezones): Timezones
     {
-        return new Timezones(items: $timezones);
+        return new Timezones(timezones: Collection::createFrom(elements: $timezones));
     }
 
     /**
@@ -39,12 +39,10 @@ final readonly class Timezones implements Countable
      */
     public static function fromStrings(string ...$identifiers): Timezones
     {
-        $items = array_map(
-            static fn(string $identifier): Timezone => Timezone::from(identifier: $identifier),
-            $identifiers
-        );
+        $timezones = Collection::createFrom(elements: $identifiers)
+            ->map(transformations: static fn(string $identifier): Timezone => Timezone::from(identifier: $identifier));
 
-        return new Timezones(items: $items);
+        return new Timezones(timezones: Collection::createFrom(elements: $timezones));
     }
 
     /**
@@ -54,7 +52,7 @@ final readonly class Timezones implements Countable
      */
     public function all(): array
     {
-        return $this->items;
+        return [...$this->timezones];
     }
 
     /**
@@ -64,7 +62,7 @@ final readonly class Timezones implements Countable
      */
     public function count(): int
     {
-        return count($this->items);
+        return $this->timezones->count();
     }
 
     /**
@@ -75,10 +73,19 @@ final readonly class Timezones implements Countable
      */
     public function contains(string $iana): bool
     {
-        return array_any(
-            $this->items,
-            static fn(Timezone $timezone): bool => $timezone->value === $iana
-        );
+        return $this->findByIdentifier(iana: $iana) !== null;
+    }
+
+    /**
+     * Returns the Timezones as strings.
+     *
+     * @return list<string> The list of IANA timezone identifier strings.
+     */
+    public function toStrings(): array
+    {
+        return $this->timezones
+            ->map(transformations: static fn(Timezone $timezone): string => $timezone->toString())
+            ->toArray(keyPreservation: KeyPreservation::DISCARD);
     }
 
     /**
@@ -89,10 +96,7 @@ final readonly class Timezones implements Countable
      */
     public function findByIdentifier(string $iana): ?Timezone
     {
-        return array_find(
-            $this->items,
-            static fn(Timezone $timezone): bool => $timezone->value === $iana
-        );
+        return $this->timezones->findBy(static fn(Timezone $timezone): bool => $timezone->value === $iana);
     }
 
     /**
@@ -104,18 +108,5 @@ final readonly class Timezones implements Countable
     public function findByIdentifierOrUtc(string $iana): Timezone
     {
         return $this->findByIdentifier(iana: $iana) ?? Timezone::utc();
-    }
-
-    /**
-     * Returns the Timezones as strings.
-     *
-     * @return list<string> The list of IANA timezone identifier strings.
-     */
-    public function toStrings(): array
-    {
-        return array_map(
-            static fn(Timezone $timezone): string => $timezone->toString(),
-            $this->items
-        );
     }
 }

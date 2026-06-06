@@ -12,15 +12,11 @@ use TinyBlocks\Time\Exceptions\InvalidTimezone;
  */
 final readonly class Timezone
 {
-    public string $value;
-
-    private function __construct(string $identifier)
+    private function __construct(public string $value)
     {
-        if ($identifier === '' || !in_array($identifier, DateTimeZone::listIdentifiers(), true)) {
-            throw new InvalidTimezone(identifier: $identifier);
+        if ($this->value === '' || !in_array($this->value, DateTimeZone::listIdentifiers(), true)) {
+            throw InvalidTimezone::becauseIdentifierIsInvalid(identifier: $this->value);
         }
-
-        $this->value = $identifier;
     }
 
     /**
@@ -30,7 +26,7 @@ final readonly class Timezone
      */
     public static function utc(): Timezone
     {
-        return new Timezone(identifier: 'UTC');
+        return new Timezone(value: 'UTC');
     }
 
     /**
@@ -42,7 +38,7 @@ final readonly class Timezone
      */
     public static function from(string $identifier): Timezone
     {
-        return new Timezone(identifier: $identifier);
+        return new Timezone(value: $identifier);
     }
 
     /**

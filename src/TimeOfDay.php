@@ -16,11 +16,11 @@ final readonly class TimeOfDay implements ValueObject
 {
     use ValueObjectBehavior;
 
+    private const string PATTERN = '/^(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?:[0-5]\d))?$/';
+
     private const int MAX_HOUR = 23;
     private const int MAX_MINUTE = 59;
     private const int MINUTES_PER_HOUR = 60;
-
-    private const string PATTERN = '/^(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?:[0-5]\d))?$/';
 
     private function __construct(public int $hour, public int $minute)
     {
@@ -48,39 +48,6 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Creates a TimeOfDay from a string in "HH:MM" or "HH:MM:SS" format.
-     * When seconds are present, they are discarded.
-     *
-     * @param string $value The time string (e.g. "08:30", "14:00", "08:30:00").
-     * @return TimeOfDay The created time of day.
-     * @throws InvalidTimeOfDay If the format is invalid or values are out of range.
-     */
-    public static function fromString(string $value): TimeOfDay
-    {
-        if (preg_match(self::PATTERN, $value, $matches) !== 1) {
-            throw InvalidTimeOfDay::becauseFormatIsInvalid(value: $value);
-        }
-
-        return self::from(hour: (int)$matches['hour'], minute: (int)$matches['minute']);
-    }
-
-    /**
-     * Creates a TimeOfDay from an Instant.
-     *
-     * @param Instant $instant The point in time to extract the time from (in UTC).
-     * @return TimeOfDay The corresponding time of day.
-     */
-    public static function fromInstant(Instant $instant): TimeOfDay
-    {
-        $dateTime = $instant->toDateTimeImmutable();
-
-        return new TimeOfDay(
-            hour: (int)$dateTime->format('G'),
-            minute: (int)$dateTime->format('i')
-        );
-    }
-
-    /**
      * Creates a TimeOfDay representing noon (12:00).
      *
      * @return TimeOfDay Noon.
@@ -101,34 +68,36 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Returns the total number of minutes since midnight.
+     * Creates a TimeOfDay from a string in "HH:MM" or "HH:MM:SS" format.
+     * When seconds are present, they are discarded.
      *
-     * @return int Minutes since 00:00.
+     * @param string $value The time string (e.g. "08:30", "14:00", "08:30:00").
+     * @return TimeOfDay The created time of day.
+     * @throws InvalidTimeOfDay If the format is invalid or values are out of range.
      */
-    public function toMinutesSinceMidnight(): int
+    public static function fromString(string $value): TimeOfDay
     {
-        return ($this->hour * self::MINUTES_PER_HOUR) + $this->minute;
+        if (preg_match(self::PATTERN, $value, $matches) !== 1) {
+            throw InvalidTimeOfDay::becauseFormatIsInvalid(value: $value);
+        }
+
+        return TimeOfDay::from(hour: (int)$matches['hour'], minute: (int)$matches['minute']);
     }
 
     /**
-     * Returns the TimeOfDay as a Duration since midnight.
+     * Creates a TimeOfDay from an Instant.
      *
-     * @return Duration The duration since midnight.
+     * @param Instant $instant The point in time to extract the time from (in UTC).
+     * @return TimeOfDay The corresponding time of day.
      */
-    public function toDuration(): Duration
+    public static function fromInstant(Instant $instant): TimeOfDay
     {
-        return Duration::fromMinutes(minutes: $this->toMinutesSinceMidnight());
-    }
+        $dateTime = $instant->toDateTimeImmutable();
 
-    /**
-     * Tells whether this time is strictly before another.
-     *
-     * @param TimeOfDay $other The time to compare against.
-     * @return bool True if this time precedes the other.
-     */
-    public function isBefore(TimeOfDay $other): bool
-    {
-        return $this->toMinutesSinceMidnight() < $other->toMinutesSinceMidnight();
+        return new TimeOfDay(
+            hour: (int)$dateTime->format('G'),
+            minute: (int)$dateTime->format('i')
+        );
     }
 
     /**
@@ -143,25 +112,36 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Tells whether this time is before or equal to another.
+     * Tells whether this time is strictly before another.
      *
      * @param TimeOfDay $other The time to compare against.
-     * @return bool True if this time is at or before the other.
+     * @return bool True if this time precedes the other.
      */
-    public function isBeforeOrEqual(TimeOfDay $other): bool
+    public function isBefore(TimeOfDay $other): bool
     {
-        return $this->toMinutesSinceMidnight() <= $other->toMinutesSinceMidnight();
+        return $this->toMinutesSinceMidnight() < $other->toMinutesSinceMidnight();
     }
 
     /**
-     * Tells whether this time is after or equal to another.
+     * Returns the TimeOfDay as a string.
      *
-     * @param TimeOfDay $other The time to compare against.
-     * @return bool True if this time is at or after the other.
+     * @return string The time formatted as "HH:MM".
      */
-    public function isAfterOrEqual(TimeOfDay $other): bool
+    public function toString(): string
     {
-        return $this->toMinutesSinceMidnight() >= $other->toMinutesSinceMidnight();
+        $template = '%02d:%02d';
+
+        return sprintf($template, $this->hour, $this->minute);
+    }
+
+    /**
+     * Returns the TimeOfDay as a Duration since midnight.
+     *
+     * @return Duration The duration since midnight.
+     */
+    public function toDuration(): Duration
+    {
+        return Duration::fromMinutes(minutes: $this->toMinutesSinceMidnight());
     }
 
     /**
@@ -184,14 +164,34 @@ final readonly class TimeOfDay implements ValueObject
     }
 
     /**
-     * Returns the TimeOfDay as a string.
+     * Tells whether this time is after or equal to another.
      *
-     * @return string The time formatted as "HH:MM".
+     * @param TimeOfDay $other The time to compare against.
+     * @return bool True if this time is at or after the other.
      */
-    public function toString(): string
+    public function isAfterOrEqual(TimeOfDay $other): bool
     {
-        $template = '%02d:%02d';
+        return $this->toMinutesSinceMidnight() >= $other->toMinutesSinceMidnight();
+    }
 
-        return sprintf($template, $this->hour, $this->minute);
+    /**
+     * Tells whether this time is before or equal to another.
+     *
+     * @param TimeOfDay $other The time to compare against.
+     * @return bool True if this time is at or before the other.
+     */
+    public function isBeforeOrEqual(TimeOfDay $other): bool
+    {
+        return $this->toMinutesSinceMidnight() <= $other->toMinutesSinceMidnight();
+    }
+
+    /**
+     * Returns the total number of minutes since midnight.
+     *
+     * @return int Minutes since 00:00.
+     */
+    public function toMinutesSinceMidnight(): int
+    {
+        return ($this->hour * self::MINUTES_PER_HOUR) + $this->minute;
     }
 }

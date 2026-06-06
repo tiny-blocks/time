@@ -11,22 +11,58 @@ use TinyBlocks\Time\Timezones;
 
 final class TimezonesTest extends TestCase
 {
-    public function testTimezonesFromSingleTimezone(): void
+    public function testFromThenEmptyCollection(): void
     {
-        /** @Given a single Timezone object */
-        $timezone = Timezone::from(identifier: 'America/Sao_Paulo');
+        /** @When creating an empty Timezones collection */
+        $timezones = Timezones::from();
 
-        /** @When creating a Timezones collection */
-        $timezones = Timezones::from($timezone);
+        /** @Then the count should be zero */
+        self::assertSame(0, $timezones->count());
 
-        /** @Then the collection should contain exactly one item */
-        self::assertSame(1, $timezones->count());
+        /** @And all() should return an empty array */
+        self::assertSame([], $timezones->all());
 
-        /** @And the item should match the original Timezone */
-        self::assertSame('America/Sao_Paulo', $timezones->all()[0]->value);
+        /** @And toStrings() should return an empty array */
+        self::assertSame([], $timezones->toStrings());
     }
 
-    public function testTimezonesFromMultipleTimezones(): void
+    public function testCountWhenTwoTimezonesThenIsCountable(): void
+    {
+        /** @Given a Timezones collection */
+        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo');
+
+        /** @When counting via the native count() function */
+        $count = count($timezones);
+
+        /** @Then the count should be 2 */
+        self::assertSame(2, $count);
+    }
+
+    public function testCountWhenManyTimezonesThenMatchesAllSize(): void
+    {
+        /** @Given a Timezones collection with four items */
+        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo', 'Europe/London');
+
+        /** @When checking the count */
+        $count = $timezones->count();
+
+        /** @Then count should match the number of items in all() */
+        self::assertCount($count, $timezones->all());
+    }
+
+    public function testContainsWhenIdentifierExistsThenReturnsTrue(): void
+    {
+        /** @Given a Timezones collection with known identifiers */
+        $timezones = Timezones::fromStrings('America/Sao_Paulo', 'America/New_York');
+
+        /** @When checking if 'America/Sao_Paulo' is contained */
+        $result = $timezones->contains(iana: 'America/Sao_Paulo');
+
+        /** @Then it should return true */
+        self::assertTrue($result);
+    }
+
+    public function testFromWhenMultipleTimezonesThenPreservesOrder(): void
     {
         /** @Given a Timezone for São Paulo */
         $first = Timezone::from(identifier: 'America/Sao_Paulo');
@@ -53,41 +89,7 @@ final class TimezonesTest extends TestCase
         self::assertSame('Asia/Tokyo', $timezones->all()[2]->value);
     }
 
-    public function testTimezonesFromStrings(): void
-    {
-        /** @When creating a Timezones collection from IANA identifier strings */
-        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Europe/London');
-
-        /** @Then the collection should contain all three items */
-        self::assertSame(3, $timezones->count());
-
-        /** @And the values should match the input order */
-        self::assertSame(['UTC', 'America/Sao_Paulo', 'Europe/London'], $timezones->toStrings());
-    }
-
-    public function testTimezonesFromStringsWithInvalidIdentifier(): void
-    {
-        /** @Then an InvalidTimezone exception should be thrown */
-        $this->expectException(InvalidTimezone::class);
-        $this->expectExceptionMessage('Timezone <Invalid/Zone> is invalid.');
-
-        /** @When creating a Timezones collection with a mix of valid and invalid identifier strings */
-        Timezones::fromStrings('UTC', 'Invalid/Zone');
-    }
-
-    public function testTimezonesContainsReturnsTrueForExistingIdentifier(): void
-    {
-        /** @Given a Timezones collection with known identifiers */
-        $timezones = Timezones::fromStrings('America/Sao_Paulo', 'America/New_York');
-
-        /** @When checking if 'America/Sao_Paulo' is contained */
-        $result = $timezones->contains(iana: 'America/Sao_Paulo');
-
-        /** @Then it should return true */
-        self::assertTrue($result);
-    }
-
-    public function testTimezonesContainsReturnsFalseForMissingIdentifier(): void
+    public function testContainsWhenIdentifierMissingThenReturnsFalse(): void
     {
         /** @Given a Timezones collection with known identifiers */
         $timezones = Timezones::fromStrings('America/Sao_Paulo', 'America/New_York');
@@ -99,7 +101,56 @@ final class TimezonesTest extends TestCase
         self::assertFalse($result);
     }
 
-    public function testTimezonesFindByIdentifierReturnsMatchingTimezone(): void
+    public function testFromWhenSingleTimezoneThenCollectionHasOneItem(): void
+    {
+        /** @Given a single Timezone object */
+        $timezone = Timezone::from(identifier: 'America/Sao_Paulo');
+
+        /** @When creating a Timezones collection */
+        $timezones = Timezones::from($timezone);
+
+        /** @Then the collection should contain exactly one item */
+        self::assertSame(1, $timezones->count());
+
+        /** @And the item should match the original Timezone */
+        self::assertSame('America/Sao_Paulo', $timezones->all()[0]->value);
+    }
+
+    public function testFromStringsWhenInvalidIdentifierThenInvalidTimezone(): void
+    {
+        /** @Then an InvalidTimezone exception should be thrown */
+        $this->expectException(InvalidTimezone::class);
+        $this->expectExceptionMessage('Timezone <Invalid/Zone> is invalid.');
+
+        /** @When creating a Timezones collection with a mix of valid and invalid identifier strings */
+        Timezones::fromStrings('UTC', 'Invalid/Zone');
+    }
+
+    public function testFindByIdentifierWhenIdentifierMissingThenReturnsNull(): void
+    {
+        /** @Given a Timezones collection without Europe/London */
+        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo');
+
+        /** @When searching for a non-existing identifier */
+        $found = $timezones->findByIdentifier(iana: 'Europe/London');
+
+        /** @Then null should be returned */
+        self::assertNull($found);
+    }
+
+    public function testFromStringsWhenValidIdentifiersThenCollectionIsCreated(): void
+    {
+        /** @When creating a Timezones collection from IANA identifier strings */
+        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Europe/London');
+
+        /** @Then the collection should contain all three items */
+        self::assertSame(3, $timezones->count());
+
+        /** @And the values should match the input order */
+        self::assertSame(['UTC', 'America/Sao_Paulo', 'Europe/London'], $timezones->toStrings());
+    }
+
+    public function testFindByIdentifierWhenIdentifierExistsThenReturnsTimezone(): void
     {
         /** @Given a Timezones collection with multiple identifiers */
         $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo');
@@ -112,67 +163,7 @@ final class TimezonesTest extends TestCase
         self::assertSame('Asia/Tokyo', $found->value);
     }
 
-    public function testTimezonesFindByIdentifierReturnsNullWhenNotFound(): void
-    {
-        /** @Given a Timezones collection without Europe/London */
-        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo');
-
-        /** @When searching for a non-existing identifier */
-        $found = $timezones->findByIdentifier(iana: 'Europe/London');
-
-        /** @Then null should be returned */
-        self::assertNull($found);
-    }
-
-    public function testTimezonesFindByIdentifierOrUtcReturnsMatchingTimezone(): void
-    {
-        /** @Given a Timezones collection with multiple identifiers */
-        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo');
-
-        /** @When searching for an existing identifier */
-        $found = $timezones->findByIdentifierOrUtc(iana: 'Asia/Tokyo');
-
-        /** @Then the matching Timezone should be returned */
-        self::assertSame('Asia/Tokyo', $found->value);
-    }
-
-    public function testTimezonesFindByIdentifierOrUtcReturnsUtcWhenNotFound(): void
-    {
-        /** @Given a Timezones collection without Europe/London */
-        $timezones = Timezones::fromStrings('America/Sao_Paulo', 'Asia/Tokyo');
-
-        /** @When searching for a non-existing identifier */
-        $found = $timezones->findByIdentifierOrUtc(iana: 'Europe/London');
-
-        /** @Then UTC should be returned as fallback */
-        self::assertSame('UTC', $found->value);
-    }
-
-    public function testTimezonesCountMatchesAllSize(): void
-    {
-        /** @Given a Timezones collection with four items */
-        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo', 'Europe/London');
-
-        /** @When checking the count */
-        $count = $timezones->count();
-
-        /** @Then count should match the number of items in all() */
-        self::assertCount($count, $timezones->all());
-    }
-
-    public function testTimezonesIsCountable(): void
-    {
-        /** @Given a Timezones collection */
-        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo');
-
-        /** @When counting via the native count() function */
-        $count = count($timezones);
-
-        /** @Then the count should be 2 */
-        self::assertSame(2, $count);
-    }
-
-    public function testTimezonesToStringsReturnsPlainIdentifiers(): void
+    public function testToStringsWhenCollectionGivenThenReturnsPlainIdentifiers(): void
     {
         /** @Given a Timezones collection */
         $timezones = Timezones::fromStrings('America/Sao_Paulo', 'Asia/Tokyo');
@@ -187,34 +178,19 @@ final class TimezonesTest extends TestCase
         );
     }
 
-    public function testTimezonesFromEmptyReturnsEmptyCollection(): void
+    public function testFindByIdentifierOrUtcWhenIdentifierMissingThenReturnsUtc(): void
     {
-        /** @When creating an empty Timezones collection */
-        $timezones = Timezones::from();
+        /** @Given a Timezones collection without Europe/London */
+        $timezones = Timezones::fromStrings('America/Sao_Paulo', 'Asia/Tokyo');
 
-        /** @Then the count should be zero */
-        self::assertSame(0, $timezones->count());
+        /** @When searching for a non-existing identifier */
+        $found = $timezones->findByIdentifierOrUtc(iana: 'Europe/London');
 
-        /** @And all() should return an empty array */
-        self::assertSame([], $timezones->all());
-
-        /** @And toStrings() should return an empty array */
-        self::assertSame([], $timezones->toStrings());
+        /** @Then UTC should be returned as fallback */
+        self::assertSame('UTC', $found->value);
     }
 
-    public function testTimezonesPreservesInsertionOrder(): void
-    {
-        /** @Given identifiers in a specific order */
-        $identifiers = ['Pacific/Auckland', 'Asia/Tokyo', 'UTC', 'America/New_York'];
-
-        /** @When creating a collection from those strings */
-        $timezones = Timezones::fromStrings(...$identifiers);
-
-        /** @Then toStrings should preserve the original order */
-        self::assertSame($identifiers, $timezones->toStrings());
-    }
-
-    public function testTimezonesCreatedFromSameIdentifiersAreConsistent(): void
+    public function testFromStringsWhenSameIdentifiersThenInstancesAreConsistent(): void
     {
         /** @Given a first Timezones collection */
         $first = Timezones::fromStrings('UTC', 'America/Sao_Paulo');
@@ -230,5 +206,29 @@ final class TimezonesTest extends TestCase
 
         /** @And their counts should match */
         self::assertSame($first->count(), $second->count());
+    }
+
+    public function testFindByIdentifierOrUtcWhenIdentifierExistsThenReturnsTimezone(): void
+    {
+        /** @Given a Timezones collection with multiple identifiers */
+        $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Asia/Tokyo');
+
+        /** @When searching for an existing identifier */
+        $found = $timezones->findByIdentifierOrUtc(iana: 'Asia/Tokyo');
+
+        /** @Then the matching Timezone should be returned */
+        self::assertSame('Asia/Tokyo', $found->value);
+    }
+
+    public function testFromStringsWhenIdentifiersGivenThenInsertionOrderIsPreserved(): void
+    {
+        /** @Given identifiers in a specific order */
+        $identifiers = ['Pacific/Auckland', 'Asia/Tokyo', 'UTC', 'America/New_York'];
+
+        /** @When creating a collection from those strings */
+        $timezones = Timezones::fromStrings(...$identifiers);
+
+        /** @Then toStrings should preserve the original order */
+        self::assertSame($identifiers, $timezones->toStrings());
     }
 }

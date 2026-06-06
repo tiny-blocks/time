@@ -6,12 +6,15 @@ namespace TinyBlocks\Time\Exceptions;
 
 use InvalidArgumentException;
 
+/**
+ * Raised when a string is not a recognized IANA timezone identifier.
+ */
 final class InvalidTimezone extends InvalidArgumentException
 {
-    public function __construct(private readonly string $identifier)
+    public static function becauseIdentifierIsInvalid(string $identifier): InvalidTimezone
     {
         $template = 'Timezone <%s> is invalid.';
 
-        parent::__construct(message: sprintf($template, $this->identifier));
+        return new InvalidTimezone(message: sprintf($template, $identifier));
     }
 }
