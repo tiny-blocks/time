@@ -154,7 +154,7 @@ final readonly class TimeOfDay implements ValueObject
      */
     public function durationUntil(TimeOfDay $other): Duration
     {
-        $difference = $other->toMinutesSinceMidnight() - $this->toMinutesSinceMidnight();
+        $difference = ($other->toMinutesSinceMidnight() - $this->toMinutesSinceMidnight());
 
         if ($difference <= 0) {
             throw InvalidTimeOfDay::becauseEndIsNotAfterStart(from: $this, to: $other);
@@ -192,6 +192,6 @@ final readonly class TimeOfDay implements ValueObject
      */
     public function toMinutesSinceMidnight(): int
     {
-        return ($this->hour * self::MINUTES_PER_HOUR) + $this->minute;
+        return (($this->hour * self::MINUTES_PER_HOUR) + $this->minute);
     }
 }

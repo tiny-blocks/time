@@ -287,7 +287,7 @@ final class DayOfWeekTest extends TestCase
         self::assertSame($expectedBackward, $backward);
 
         /** @And together they should complete a full week */
-        self::assertSame(7, $expectedForward + $expectedBackward);
+        self::assertSame(7, ($expectedForward + $expectedBackward));
     }
 
     public static function forwardDistanceDataProvider(): array

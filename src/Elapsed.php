@@ -43,6 +43,6 @@ final readonly class Elapsed implements ValueObject
      */
     public function toMilliseconds(): float
     {
-        return round($this->nanoseconds / self::NANOSECONDS_PER_MILLISECOND, 2);
+        return round(($this->nanoseconds / self::NANOSECONDS_PER_MILLISECOND), 2);
     }
 }

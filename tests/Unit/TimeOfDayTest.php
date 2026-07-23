@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Test\TinyBlocks\Time\Unit;
 
 use PHPUnit\Framework\TestCase;
-use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Exceptions\InvalidTimeOfDay;
+use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\TimeOfDay;
 
 final class TimeOfDayTest extends TestCase

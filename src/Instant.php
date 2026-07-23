@@ -7,7 +7,9 @@ namespace TinyBlocks\Time;
 use DateTimeImmutable;
 use TinyBlocks\Mapper\ScalarCodec;
 use TinyBlocks\Time\Exceptions\InvalidInstant;
+use TinyBlocks\Time\Exceptions\InvalidLocalDate;
 use TinyBlocks\Time\Internal\TextDecoder;
+use TinyBlocks\Time\Internal\ZonedShift;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
 
@@ -38,7 +40,8 @@ final readonly class Instant implements ValueObject
     public static function now(): Instant
     {
         $utc = Timezone::utc()->toDateTimeZone();
-        return new Instant(datetime: new DateTimeImmutable(datetime: 'now', timezone: $utc));
+
+        return new Instant(datetime: new DateTimeImmutable(timezone: $utc));
     }
 
     /**
@@ -121,19 +124,42 @@ final readonly class Instant implements ValueObject
     }
 
     /**
+     * Returns a new Instant with the given number of years added, re-anchored in a timezone.
+     *
+     * <p>A negative count shifts backward. The instant is projected into <code>$zone</code> (UTC
+     * when omitted), the year shift runs on the local date through {@see LocalDate::plusYears()}
+     * with the same February 29 clamping, and the result is normalized back to UTC.</p>
+     *
+     * @param int $years The number of years to add (may be negative).
+     * @param Timezone|null $zone The timezone used to re-anchor the shift. Defaults to UTC.
+     * @return Instant A new Instant re-anchored after the year shift, normalized to UTC.
+     * @throws InvalidLocalDate If the resulting date falls outside the range 0001 to 9999.
+     */
+    public function plusYears(int $years, ?Timezone $zone = null): Instant
+    {
+        $timezone = ($zone ?? Timezone::utc());
+        $shiftedDate = $this->toLocalDate(zone: $timezone)->plusYears(years: $years);
+        $recomposed = ZonedShift::recompose(zone: $timezone, original: $this->datetime, shiftedDate: $shiftedDate);
+
+        return new Instant(datetime: $recomposed);
+    }
+
+    /**
      * Returns the Instant as an ISO 8601 string in UTC at the chosen sub-second precision.
      *
-     * The output always carries the +00:00 offset and is composed of a date, a time, and an
-     * optional fractional-seconds component determined by the precision argument:
+     * <p>The output always carries the +00:00 offset and is composed of a date, a time, and an
+     * optional fractional-seconds component determined by the precision argument:</p>
      *
-     *  - Precision::Seconds (default): no fractional component, e.g. 2026-02-17T10:30:00+00:00.
-     *  - Precision::Milliseconds: three fractional digits, e.g. 2026-02-17T08:27:21.106+00:00.
-     *  - Precision::Microseconds: six fractional digits, e.g. 2026-02-17T08:27:21.106011+00:00.
+     * <ul>
+     * <li>Precision::Seconds (default): no fractional component, e.g. 2026-02-17T10:30:00+00:00.</li>
+     * <li>Precision::Milliseconds: three fractional digits, e.g. 2026-02-17T08:27:21.106+00:00.</li>
+     * <li>Precision::Microseconds: six fractional digits, e.g. 2026-02-17T08:27:21.106011+00:00.</li>
+     * </ul>
      *
-     * Use Microseconds when interoperating with stores that hold sub-second precision (e.g. a
-     * TIMESTAMP(6) column). Use Seconds for human-facing logs or APIs that do not carry
-     * sub-second timing. Use Milliseconds when consumers expect millisecond resolution but
-     * not microseconds (some web APIs, JavaScript Date).
+     * <p>Use Microseconds when interoperating with stores that hold sub-second precision (e.g. a
+     * TIMESTAMP(6) column). Use Seconds for human-facing logs or APIs that do not carry sub-second
+     * timing. Use Milliseconds when consumers expect millisecond resolution but not microseconds
+     * (some web APIs, JavaScript Date).</p>
      *
      * @param Precision $precision The sub-second granularity to include in the output.
      *                             Defaults to Precision::Seconds.
@@ -156,16 +182,78 @@ final readonly class Instant implements ValueObject
     }
 
     /**
+     * Returns a new Instant with the given number of years subtracted, re-anchored in a timezone.
+     *
+     * <p>A negative count shifts forward. Delegates to {@see Instant::plusYears()} with the sign
+     * inverted, so February 29 shifted onto a common year is clamped to February 28 and the same
+     * re-anchoring applies.</p>
+     *
+     * @param int $years The number of years to subtract (may be negative).
+     * @param Timezone|null $zone The timezone used to re-anchor the shift. Defaults to UTC.
+     * @return Instant A new Instant re-anchored after the year shift, normalized to UTC.
+     * @throws InvalidLocalDate If the resulting date falls outside the range 0001 to 9999.
+     */
+    public function minusYears(int $years, ?Timezone $zone = null): Instant
+    {
+        return $this->plusYears(years: -$years, zone: $zone);
+    }
+
+    /**
+     * Returns a new Instant with the given number of months added, re-anchored in a timezone.
+     *
+     * <p>A negative count shifts backward. The instant is projected into <code>$zone</code> (UTC
+     * when omitted). The calendar shift runs on the local date through {@see LocalDate::plusMonths()},
+     * which clamps the day to the last valid day of the target month. The original local time of
+     * day, including microseconds, is preserved, and the result is normalized back to UTC.</p>
+     *
+     * <p>When the resulting local wall time does not exist in the zone because of a spring-forward
+     * gap, PHP's own resolution is adopted, shifting the time forward by the gap. For example, an
+     * instant whose local time is 2026-02-08 02:30 in America/New_York, plus 1 month, targets the
+     * non-existent local 2026-03-08 02:30 and resolves to 2026-03-08 03:30 -04:00, which is the
+     * instant 2026-03-08T07:30:00+00:00.</p>
+     *
+     * @param int $months The number of months to add (may be negative).
+     * @param Timezone|null $zone The timezone used to re-anchor the shift. Defaults to UTC.
+     * @return Instant A new Instant re-anchored after the month shift, normalized to UTC.
+     * @throws InvalidLocalDate If the resulting date falls outside the range 0001 to 9999.
+     */
+    public function plusMonths(int $months, ?Timezone $zone = null): Instant
+    {
+        $timezone = ($zone ?? Timezone::utc());
+        $shiftedDate = $this->toLocalDate(zone: $timezone)->plusMonths(months: $months);
+        $recomposed = ZonedShift::recompose(zone: $timezone, original: $this->datetime, shiftedDate: $shiftedDate);
+
+        return new Instant(datetime: $recomposed);
+    }
+
+    /**
+     * Returns a new Instant with the given number of months subtracted, re-anchored in a timezone.
+     *
+     * <p>A negative count shifts forward. Delegates to {@see Instant::plusMonths()} with the sign
+     * inverted, so the same re-anchoring, day clamping, and spring-forward gap resolution apply.</p>
+     *
+     * @param int $months The number of months to subtract (may be negative).
+     * @param Timezone|null $zone The timezone used to re-anchor the shift. Defaults to UTC.
+     * @return Instant A new Instant re-anchored after the month shift, normalized to UTC.
+     * @throws InvalidLocalDate If the resulting date falls outside the range 0001 to 9999.
+     */
+    public function minusMonths(int $months, ?Timezone $zone = null): Instant
+    {
+        return $this->plusMonths(months: -$months, zone: $zone);
+    }
+
+    /**
      * Projects this instant into a calendar date under the given timezone.
      *
      * @param Timezone $zone The timezone used to determine the civil date.
      * @return LocalDate The local date in the given timezone at this instant.
+     * @throws InvalidLocalDate If the projected date falls outside the range 0001 to 9999.
      */
     public function toLocalDate(Timezone $zone): LocalDate
     {
-        $dateTime = $this->datetime->setTimezone($zone->toDateTimeZone());
+        $datetime = $this->datetime->setTimezone($zone->toDateTimeZone());
 
-        return LocalDate::fromString(value: $dateTime->format('Y-m-d'));
+        return LocalDate::fromString(value: $datetime->format('Y-m-d'));
     }
 
     /**

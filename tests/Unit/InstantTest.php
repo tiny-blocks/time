@@ -7,9 +7,11 @@ namespace Test\TinyBlocks\Time\Unit;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\Duration;
+use TinyBlocks\Time\Exceptions\InvalidInstant;
+use TinyBlocks\Time\Exceptions\InvalidLocalDate;
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Precision;
-use TinyBlocks\Time\Exceptions\InvalidInstant;
+use TinyBlocks\Time\Timezone;
 
 final class InstantTest extends TestCase
 {
@@ -141,6 +143,18 @@ final class InstantTest extends TestCase
         self::assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $iso);
     }
 
+    public function testPlusYearsWhenCommonDateThenShiftsYear(): void
+    {
+        /** @Given an Instant on a common day */
+        $instant = Instant::fromString(value: '2026-05-15T10:00:00+00:00');
+
+        /** @When adding two years */
+        $shifted = $instant->plusYears(years: 2);
+
+        /** @Then the year is shifted forward and the time of day is preserved */
+        self::assertSame('2028-05-15T10:00:00+00:00', $shifted->toIso8601());
+    }
+
     public function testIsAfterOrEqualWhenEqualThenReturnsTrue(): void
     {
         /** @Given an Instant at a known moment */
@@ -171,6 +185,30 @@ final class InstantTest extends TestCase
         self::assertTrue($isAfterOrEqual);
     }
 
+    public function testMinusYearsWhenCommonDateThenShiftsYear(): void
+    {
+        /** @Given an Instant on a common day */
+        $instant = Instant::fromString(value: '2026-05-15T10:00:00+00:00');
+
+        /** @When subtracting two years */
+        $shifted = $instant->minusYears(years: 2);
+
+        /** @Then the year is shifted backward and the time of day is preserved */
+        self::assertSame('2024-05-15T10:00:00+00:00', $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenNoZoneThenReanchorsInUtc(): void
+    {
+        /** @Given an Instant on the last day of a 31-day month */
+        $instant = Instant::fromString(value: '2026-01-31T10:00:00+00:00');
+
+        /** @When adding one month without a zone, defaulting to UTC */
+        $shifted = $instant->plusMonths(months: 1);
+
+        /** @Then the date is shifted and clamped while the time of day is preserved */
+        self::assertSame('2026-02-28T10:00:00+00:00', $shifted->toIso8601());
+    }
+
     public function testIsBeforeOrEqualWhenEqualThenReturnsTrue(): void
     {
         /** @Given an Instant at a known moment */
@@ -192,10 +230,22 @@ final class InstantTest extends TestCase
         $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
         /** @When adding zero Duration */
-        $result = $instant->plus(duration: Duration::zero());
+        $shifted = $instant->plus(duration: Duration::zero());
 
         /** @Then the result should be the same time */
-        self::assertSame('2026-02-17T10:00:00+00:00', $result->toIso8601());
+        self::assertSame('2026-02-17T10:00:00+00:00', $shifted->toIso8601());
+    }
+
+    public function testPlusYearsWhenLeapDayThenClampsToLastDay(): void
+    {
+        /** @Given an Instant on the leap day of a leap year */
+        $instant = Instant::fromString(value: '2024-02-29T10:00:00+00:00');
+
+        /** @When adding one year to a common year */
+        $shifted = $instant->plusYears(years: 1);
+
+        /** @Then the day is clamped to the last day of February and the time is preserved */
+        self::assertSame('2025-02-28T10:00:00+00:00', $shifted->toIso8601());
     }
 
     public function testIsBeforeOrEqualWhenLaterThenReturnsFalse(): void
@@ -213,16 +263,40 @@ final class InstantTest extends TestCase
         self::assertFalse($isBeforeOrEqual);
     }
 
+    public function testMinusMonthsWhenNegativeThenShiftsForward(): void
+    {
+        /** @Given an Instant on the last day of a 31-day month */
+        $instant = Instant::fromString(value: '2026-01-31T10:00:00+00:00');
+
+        /** @When subtracting -1 month (equivalent to adding 1) */
+        $shifted = $instant->minusMonths(months: -1);
+
+        /** @Then the date is shifted forward and clamped while the time is preserved */
+        self::assertSame('2026-02-28T10:00:00+00:00', $shifted->toIso8601());
+    }
+
     public function testMinusWhenZeroDurationThenReturnsSameTime(): void
     {
         /** @Given an Instant at a known time */
         $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
         /** @When subtracting zero Duration */
-        $result = $instant->minus(duration: Duration::zero());
+        $shifted = $instant->minus(duration: Duration::zero());
 
         /** @Then the result should be the same time */
-        self::assertSame('2026-02-17T10:00:00+00:00', $result->toIso8601());
+        self::assertSame('2026-02-17T10:00:00+00:00', $shifted->toIso8601());
+    }
+
+    public function testMinusYearsWhenLeapDayThenClampsToLastDay(): void
+    {
+        /** @Given an Instant on the leap day of a leap year */
+        $instant = Instant::fromString(value: '2024-02-29T10:00:00+00:00');
+
+        /** @When subtracting one year to a common year */
+        $shifted = $instant->minusYears(years: 1);
+
+        /** @Then the day is clamped to the last day of February and the time is preserved */
+        self::assertSame('2023-02-28T10:00:00+00:00', $shifted->toIso8601());
     }
 
     public function testIsAfterOrEqualWhenEarlierThenReturnsFalse(): void
@@ -264,10 +338,10 @@ final class InstantTest extends TestCase
         $duration = Duration::fromMinutes(minutes: 30);
 
         /** @When adding the Duration */
-        $result = $instant->plus(duration: $duration);
+        $shifted = $instant->plus(duration: $duration);
 
         /** @Then the result should be 30 minutes later */
-        self::assertSame('2026-02-17T10:30:00+00:00', $result->toIso8601());
+        self::assertSame('2026-02-17T10:30:00+00:00', $shifted->toIso8601());
     }
 
     public function testNowThenMicrosecondComponentIsRepresentable(): void
@@ -317,10 +391,10 @@ final class InstantTest extends TestCase
         $duration = Duration::fromMinutes(minutes: 30);
 
         /** @When subtracting the Duration */
-        $result = $instant->minus(duration: $duration);
+        $shifted = $instant->minus(duration: $duration);
 
         /** @Then the result should be 30 minutes earlier */
-        self::assertSame('2026-02-17T10:00:00+00:00', $result->toIso8601());
+        self::assertSame('2026-02-17T10:00:00+00:00', $shifted->toIso8601());
     }
 
     public function testDurationUntilWhenSwappedThenReturnsSameValue(): void
@@ -338,16 +412,28 @@ final class InstantTest extends TestCase
         self::assertSame($duration->toSeconds(), $later->durationUntil(other: $earlier)->toSeconds());
     }
 
+    public function testMinusMonthsWhenDefaultZoneThenShiftsBackward(): void
+    {
+        /** @Given an Instant on the last day of a 31-day month */
+        $instant = Instant::fromString(value: '2026-03-31T10:00:00+00:00');
+
+        /** @When subtracting one month without a zone, defaulting to UTC */
+        $shifted = $instant->minusMonths(months: 1);
+
+        /** @Then the date is shifted backward and clamped while the time is preserved */
+        self::assertSame('2026-02-28T10:00:00+00:00', $shifted->toIso8601());
+    }
+
     public function testPlusWhenCrossesDayBoundaryThenReturnsNextDay(): void
     {
         /** @Given an Instant near the end of the day */
         $instant = Instant::fromString(value: '2026-02-17T23:30:00+00:00');
 
         /** @When adding 1 hour */
-        $result = $instant->plus(duration: Duration::fromHours(hours: 1));
+        $shifted = $instant->plus(duration: Duration::fromHours(hours: 1));
 
         /** @Then the result should cross into the next day */
-        self::assertSame('2026-02-18T00:30:00+00:00', $result->toIso8601());
+        self::assertSame('2026-02-18T00:30:00+00:00', $shifted->toIso8601());
     }
 
     public function testFromStringWhenDatabaseFormatThenTimezoneIsUtc(): void
@@ -386,6 +472,18 @@ final class InstantTest extends TestCase
         self::assertSame('2026-02-17T08:27:21+00:00', $iso);
     }
 
+    public function testPlusMonthsWhenZeroThenReturnsEquivalentInstant(): void
+    {
+        /** @Given an Instant at a known moment */
+        $instant = Instant::fromString(value: '2026-05-23T10:00:00+00:00');
+
+        /** @When adding zero months */
+        $shifted = $instant->plusMonths(months: 0);
+
+        /** @Then the result is an equivalent instant */
+        self::assertSame('2026-05-23T10:00:00+00:00', $shifted->toIso8601());
+    }
+
     public function testFromStringWhenNegativeOffsetThenNormalizesToUtc(): void
     {
         /** @When creating an Instant from a string with a negative offset */
@@ -413,10 +511,10 @@ final class InstantTest extends TestCase
         $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
         /** @When adding 1 day */
-        $result = $instant->plus(duration: Duration::fromDays(days: 1));
+        $shifted = $instant->plus(duration: Duration::fromDays(days: 1));
 
         /** @Then the result should be exactly one day later */
-        self::assertSame('2026-02-18T10:00:00+00:00', $result->toIso8601());
+        self::assertSame('2026-02-18T10:00:00+00:00', $shifted->toIso8601());
     }
 
     public function testPlusWhenDurationProvidedThenPreservesUtcTimezone(): void
@@ -425,10 +523,25 @@ final class InstantTest extends TestCase
         $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
         /** @When adding a Duration */
-        $result = $instant->plus(duration: Duration::fromMinutes(minutes: 90));
+        $shifted = $instant->plus(duration: Duration::fromMinutes(minutes: 90));
 
         /** @Then the result should remain in UTC */
-        self::assertSame('UTC', $result->toDateTimeImmutable()->getTimezone()->getName());
+        self::assertSame('UTC', $shifted->toDateTimeImmutable()->getTimezone()->getName());
+    }
+
+    public function testPlusYearsWhenZoneProvidedThenReanchorsInThatZone(): void
+    {
+        /** @Given an Instant whose Tokyo local date is the leap day but whose UTC date is not */
+        $instant = Instant::fromString(value: '2024-02-28T20:00:00+00:00');
+
+        /** @And the Tokyo timezone */
+        $zone = Timezone::from(identifier: 'Asia/Tokyo');
+
+        /** @When adding one year re-anchored in Tokyo */
+        $shifted = $instant->plusYears(years: 1, zone: $zone);
+
+        /** @Then the shift follows the Tokyo local date, clamped, and normalizes back to UTC */
+        self::assertSame('2025-02-27T20:00:00+00:00', $shifted->toIso8601());
     }
 
     public function testFromUnixSecondsWhenEpochThenReturnsUnixEpochInUtc(): void
@@ -449,10 +562,10 @@ final class InstantTest extends TestCase
         $instant = Instant::fromString(value: '2026-02-17T00:30:00+00:00');
 
         /** @When subtracting 1 hour */
-        $result = $instant->minus(duration: Duration::fromHours(hours: 1));
+        $shifted = $instant->minus(duration: Duration::fromHours(hours: 1));
 
         /** @Then the result should cross into the previous day */
-        self::assertSame('2026-02-16T23:30:00+00:00', $result->toIso8601());
+        self::assertSame('2026-02-16T23:30:00+00:00', $shifted->toIso8601());
     }
 
     public function testMinusWhenDurationProvidedThenPreservesUtcTimezone(): void
@@ -461,10 +574,25 @@ final class InstantTest extends TestCase
         $instant = Instant::fromString(value: '2026-02-17T10:00:00+00:00');
 
         /** @When subtracting a Duration */
-        $result = $instant->minus(duration: Duration::fromMinutes(minutes: 90));
+        $shifted = $instant->minus(duration: Duration::fromMinutes(minutes: 90));
 
         /** @Then the result should remain in UTC */
-        self::assertSame('UTC', $result->toDateTimeImmutable()->getTimezone()->getName());
+        self::assertSame('UTC', $shifted->toDateTimeImmutable()->getTimezone()->getName());
+    }
+
+    public function testPlusMonthsWhenZoneProvidedThenReanchorsInThatZone(): void
+    {
+        /** @Given an Instant whose local date in Tokyo differs from its UTC date */
+        $instant = Instant::fromString(value: '2026-01-30T20:00:00+00:00');
+
+        /** @And the Tokyo timezone */
+        $zone = Timezone::from(identifier: 'Asia/Tokyo');
+
+        /** @When adding one month re-anchored in Tokyo */
+        $shifted = $instant->plusMonths(months: 1, zone: $zone);
+
+        /** @Then the shift follows the Tokyo local date, clamped, and normalizes back to UTC */
+        self::assertSame('2026-02-27T20:00:00+00:00', $shifted->toIso8601());
     }
 
     public function testPlusWhenPositiveDurationThenResultIsAfterOriginal(): void
@@ -513,6 +641,18 @@ final class InstantTest extends TestCase
         self::assertSame('2026-02-17T00:00:00+00:00', $instant->toIso8601());
     }
 
+    public function testPlusMonthsWhenMicrosecondsPresentThenPreservesThem(): void
+    {
+        /** @Given an Instant carrying microsecond precision */
+        $instant = Instant::fromString(value: '2026-01-31T12:34:56.789012+00:00');
+
+        /** @When adding one month */
+        $shifted = $instant->plusMonths(months: 1);
+
+        /** @Then the microseconds are preserved after the shift and clamp */
+        self::assertSame('2026-02-28T12:34:56.789012+00:00', $shifted->toIso8601(precision: Precision::Microseconds));
+    }
+
     public function testMinusWhenPositiveDurationThenResultIsBeforeOriginal(): void
     {
         /** @Given an Instant at a known time */
@@ -536,6 +676,19 @@ final class InstantTest extends TestCase
 
         /** @And the Unix seconds should round-trip correctly */
         self::assertSame(-86400, $instant->toUnixSeconds());
+    }
+
+    public function testPlusYearsWhenArgumentIsIntegerMaxThenInvalidLocalDate(): void
+    {
+        /** @Given an Instant at a known moment */
+        $instant = Instant::fromString(value: '2026-05-15T10:00:00+00:00');
+
+        /** @Then an out-of-range shift is raised instead of an arithmetic overflow */
+        $this->expectException(InvalidLocalDate::class);
+        $this->expectExceptionMessage('The shifted date falls outside the supported range 0001 to 9999.');
+
+        /** @When adding the maximum integer number of years re-anchored in UTC */
+        $instant->plusYears(years: PHP_INT_MAX);
     }
 
     public function testToIso8601WhenFromValidStringThenHasNoFractionalSeconds(): void
@@ -603,11 +756,11 @@ final class InstantTest extends TestCase
         $duration = Duration::fromMinutes(minutes: 45);
 
         /** @When adding and then subtracting the same Duration */
-        $result = $instant->plus(duration: $duration)->minus(duration: $duration);
+        $shifted = $instant->plus(duration: $duration)->minus(duration: $duration);
 
         /** @Then the result should be the original time */
-        self::assertSame($instant->toIso8601(), $result->toIso8601());
-        self::assertSame($instant->toUnixSeconds(), $result->toUnixSeconds());
+        self::assertSame($instant->toIso8601(), $shifted->toIso8601());
+        self::assertSame($instant->toUnixSeconds(), $shifted->toUnixSeconds());
     }
 
     public function testComparisonsWhenSameMomentFromDifferentOriginsThenAllAgree(): void
@@ -642,6 +795,19 @@ final class InstantTest extends TestCase
         /** @Then the duration should be 1800 seconds regardless of direction */
         self::assertSame(1800, $duration->toSeconds());
         self::assertSame(1800, $later->durationUntil(other: $earlier)->toSeconds());
+    }
+
+    public function testPlusMonthsWhenResultExceedsMaximumYearThenInvalidLocalDate(): void
+    {
+        /** @Given an Instant in the last month of the maximum supported year */
+        $instant = Instant::fromString(value: '9999-12-01T10:00:00+00:00');
+
+        /** @Then an exception indicating an out-of-range shift should be thrown */
+        $this->expectException(InvalidLocalDate::class);
+        $this->expectExceptionMessage('The shifted date falls outside the supported range 0001 to 9999.');
+
+        /** @When adding one month crosses above the maximum year */
+        $instant->plusMonths(months: 1);
     }
 
     public function testDurationUntilWhenAcrossDayBoundaryThenReturnsCorrectSeconds(): void
@@ -730,6 +896,21 @@ final class InstantTest extends TestCase
 
         /** @Then the duration between them should be zero */
         self::assertTrue($duration->isZero());
+    }
+
+    public function testPlusMonthsWhenTargetLocalTimeFallsInDstGapThenPhpShiftsForward(): void
+    {
+        /** @Given an Instant whose local time in New York is 2026-02-08 02:30 */
+        $instant = Instant::fromString(value: '2026-02-08T07:30:00+00:00');
+
+        /** @And the America/New_York timezone */
+        $zone = Timezone::from(identifier: 'America/New_York');
+
+        /** @When adding one month lands on the non-existent local 2026-03-08 02:30 spring-forward gap */
+        $shifted = $instant->plusMonths(months: 1, zone: $zone);
+
+        /** @Then PHP shifts the local time forward to 03:30 -04:00, which is 07:30 UTC */
+        self::assertSame('2026-03-08T07:30:00+00:00', $shifted->toIso8601());
     }
 
     public function testDurationUntilWhenInstantShiftedByDurationThenEqualsThatDuration(): void

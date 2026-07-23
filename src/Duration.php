@@ -44,7 +44,7 @@ final readonly class Duration implements ValueObject
      */
     public static function fromDays(int $days): Duration
     {
-        return new Duration(seconds: Seconds::from(value: $days * self::SECONDS_PER_DAY));
+        return new Duration(seconds: Seconds::from(value: ($days * self::SECONDS_PER_DAY)));
     }
 
     /**
@@ -56,7 +56,7 @@ final readonly class Duration implements ValueObject
      */
     public static function fromHours(int $hours): Duration
     {
-        return new Duration(seconds: Seconds::from(value: $hours * self::SECONDS_PER_HOUR));
+        return new Duration(seconds: Seconds::from(value: ($hours * self::SECONDS_PER_HOUR)));
     }
 
     /**
@@ -68,7 +68,7 @@ final readonly class Duration implements ValueObject
      */
     public static function fromMinutes(int $minutes): Duration
     {
-        return new Duration(seconds: Seconds::from(value: $minutes * self::SECONDS_PER_MINUTE));
+        return new Duration(seconds: Seconds::from(value: ($minutes * self::SECONDS_PER_MINUTE)));
     }
 
     /**

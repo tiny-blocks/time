@@ -37,6 +37,6 @@ final readonly class Stopwatch
      */
     public function elapsed(): Elapsed
     {
-        return Elapsed::fromNanoseconds(nanoseconds: $this->clock->nanoseconds() - $this->startedAt);
+        return Elapsed::fromNanoseconds(nanoseconds: ($this->clock->nanoseconds() - $this->startedAt));
     }
 }

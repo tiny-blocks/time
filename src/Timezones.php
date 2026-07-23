@@ -107,6 +107,6 @@ final readonly class Timezones implements Countable
      */
     public function findByIdentifierOrUtc(string $iana): Timezone
     {
-        return $this->findByIdentifier(iana: $iana) ?? Timezone::utc();
+        return ($this->findByIdentifier(iana: $iana) ?? Timezone::utc());
     }
 }
