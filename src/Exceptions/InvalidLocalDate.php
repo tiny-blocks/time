@@ -18,6 +18,11 @@ final class InvalidLocalDate extends InvalidArgumentException
         return new InvalidLocalDate(message: sprintf($template, $value));
     }
 
+    public static function becauseShiftIsOutOfRange(): InvalidLocalDate
+    {
+        return new InvalidLocalDate(message: 'The shifted date falls outside the supported range 0001 to 9999.');
+    }
+
     public static function becauseComponentsAreInvalid(int $year, int $month, int $day): InvalidLocalDate
     {
         $template = 'Year <%d>, month <%d>, and day <%d> do not form a valid calendar date.';

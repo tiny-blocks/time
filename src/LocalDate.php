@@ -7,12 +7,14 @@ namespace TinyBlocks\Time;
 use DateTimeImmutable;
 use TinyBlocks\Mapper\ScalarCodec;
 use TinyBlocks\Time\Exceptions\InvalidLocalDate;
+use TinyBlocks\Time\Internal\CalendarDay;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
 
 /**
  * Represents a calendar date (year, month, day) without time and without timezone.
- * Two instances of this type for the same date are always equal by value.
+ *
+ * <p>Two instances of this type for the same date are always equal by value.</p>
  */
 #[ScalarCodec(decode: 'fromString', encode: 'toIso8601')]
 final readonly class LocalDate implements ValueObject
@@ -31,9 +33,9 @@ final readonly class LocalDate implements ValueObject
     /**
      * Creates a LocalDate from explicit year, month, and day components.
      *
-     * @param int $year The calendar year (1–9999).
-     * @param int $month The month of the year (1–12).
-     * @param int $day The day of the month (1–31, validated per month and leap year).
+     * @param int $year The calendar year (1-9999).
+     * @param int $month The month of the year (1-12).
+     * @param int $day The day of the month (1-31, validated per month and leap year).
      * @return LocalDate The created local date.
      * @throws InvalidLocalDate If the combination does not form a valid calendar date.
      */
@@ -56,7 +58,7 @@ final readonly class LocalDate implements ValueObject
      */
     public static function today(Timezone $zone): LocalDate
     {
-        $dateTime = new DateTimeImmutable(datetime: 'now', timezone: $zone->toDateTimeZone());
+        $dateTime = new DateTimeImmutable(timezone: $zone->toDateTimeZone());
 
         return LocalDate::fromString(value: $dateTime->format(self::DATE_FORMAT));
     }
@@ -97,7 +99,7 @@ final readonly class LocalDate implements ValueObject
     /**
      * Returns the month of the year.
      *
-     * @return int The month (1–12).
+     * @return int The month (1-12).
      */
     public function month(): int
     {
@@ -128,7 +130,8 @@ final readonly class LocalDate implements ValueObject
 
     /**
      * Returns a copy of this date shifted forward by the given number of days.
-     * A negative count shifts backward.
+     *
+     * <p>A negative count shifts backward.</p>
      *
      * @param int $days The number of days to add (may be negative).
      * @return LocalDate A new LocalDate shifted forward by the given count.
@@ -153,7 +156,8 @@ final readonly class LocalDate implements ValueObject
 
     /**
      * Returns a copy of this date shifted backward by the given number of days.
-     * A negative count shifts forward.
+     *
+     * <p>A negative count shifts forward.</p>
      *
      * @param int $days The number of days to subtract (may be negative).
      * @return LocalDate A new LocalDate shifted backward by the given count.
@@ -164,6 +168,31 @@ final readonly class LocalDate implements ValueObject
         $modified = $this->date->modify(sprintf($template, -$days));
 
         return new LocalDate(date: $modified);
+    }
+
+    /**
+     * Returns a copy of this date shifted forward by the given number of years.
+     *
+     * <p>A negative count shifts backward. February 29 shifted onto a common year is clamped to
+     * February 28, exactly as the month shift clamps in {@see LocalDate::plusMonths()}.</p>
+     *
+     * @param int $years The number of years to add (may be negative).
+     * @return LocalDate A new LocalDate with the year shifted and the day clamped.
+     * @throws InvalidLocalDate If the resulting date falls outside the range 0001 to 9999.
+     */
+    public function plusYears(int $years): LocalDate
+    {
+        $lowestShift = (self::MIN_YEAR - $this->year());
+        $highestShift = (self::MAX_YEAR - $this->year());
+
+        if ($years < $lowestShift || $years > $highestShift) {
+            throw InvalidLocalDate::becauseShiftIsOutOfRange();
+        }
+
+        $targetYear = ($this->year() + $years);
+        $clampedDay = CalendarDay::clamp(year: $targetYear, month: $this->month(), day: $this->dayOfMonth());
+
+        return LocalDate::of(year: $targetYear, month: $this->month(), day: $clampedDay);
     }
 
     /**
@@ -179,11 +208,80 @@ final readonly class LocalDate implements ValueObject
     /**
      * Returns the day of the month.
      *
-     * @return int The day (1–31).
+     * @return int The day (1-31).
      */
     public function dayOfMonth(): int
     {
         return (int)$this->date->format('j');
+    }
+
+    /**
+     * Returns a copy of this date shifted backward by the given number of years.
+     *
+     * <p>A negative count shifts forward. February 29 shifted onto a common year is clamped to
+     * February 28, exactly as the month shift clamps in {@see LocalDate::plusMonths()}.</p>
+     *
+     * @param int $years The number of years to subtract (may be negative).
+     * @return LocalDate A new LocalDate with the year shifted and the day clamped.
+     * @throws InvalidLocalDate If the resulting date falls outside the range 0001 to 9999.
+     */
+    public function minusYears(int $years): LocalDate
+    {
+        return $this->plusYears(years: -$years);
+    }
+
+    /**
+     * Returns a copy of this date shifted forward by the given number of months.
+     *
+     * <p>A negative count shifts backward. The shift moves the year and month first, then clamps
+     * the day to the last valid day of the target month. When the original day does not exist in a
+     * shorter target month, the result lands on that month's final day.</p>
+     *
+     * <ul>
+     * <li>2026-01-31 plus 1 month becomes 2026-02-28.</li>
+     * <li>2028-01-31 plus 1 month becomes 2028-02-29.</li>
+     * <li>2026-03-31 minus 1 month becomes 2026-02-28.</li>
+     * </ul>
+     *
+     * <p>Because the day is clamped, the operation is not associative. Shifting 2026-01-31
+     * forward by 1 month and then back by 1 month yields 2026-01-28, not the original day.</p>
+     *
+     * @param int $months The number of months to add (may be negative).
+     * @return LocalDate A new LocalDate with the year and month shifted and the day clamped.
+     * @throws InvalidLocalDate If the resulting date falls outside the range 0001 to 9999.
+     */
+    public function plusMonths(int $months): LocalDate
+    {
+        $baseMonths = (($this->year() * 12) + ($this->month() - 1));
+        $lowestShift = ((self::MIN_YEAR * 12) - $baseMonths);
+        $highestShift = ((self::MAX_YEAR * 12) + 11 - $baseMonths);
+
+        if ($months < $lowestShift || $months > $highestShift) {
+            throw InvalidLocalDate::becauseShiftIsOutOfRange();
+        }
+
+        $totalMonths = ($baseMonths + $months);
+        $targetYear = intdiv($totalMonths, 12);
+        $targetMonth = (($totalMonths % 12) + 1);
+        $clampedDay = CalendarDay::clamp(year: $targetYear, month: $targetMonth, day: $this->dayOfMonth());
+
+        return LocalDate::of(year: $targetYear, month: $targetMonth, day: $clampedDay);
+    }
+
+    /**
+     * Returns a copy of this date shifted backward by the given number of months.
+     *
+     * <p>A negative count shifts forward. The day is clamped to the last valid day of the target
+     * month, exactly as in {@see LocalDate::plusMonths()}. Because of the clamp, the operation is
+     * not associative.</p>
+     *
+     * @param int $months The number of months to subtract (may be negative).
+     * @return LocalDate A new LocalDate with the year and month shifted and the day clamped.
+     * @throws InvalidLocalDate If the resulting date falls outside the range 0001 to 9999.
+     */
+    public function minusMonths(int $months): LocalDate
+    {
+        return $this->plusMonths(months: -$months);
     }
 
     /**

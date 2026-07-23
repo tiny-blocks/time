@@ -7,11 +7,13 @@ paths:
 
 # Code style
 
-Semantic rules for all PHP files in libraries. Formatting rules covered by `PSR-12` are enforced
-by `phpcs.xml`. Four formatting rules outside `PSR-12` (single-line signatures within 120
-characters, no vertical alignment in parameter lists, vertical alignment of `=>` in multi-line
-match arms and array literals, no trailing comma in multi-line lists) are documented at the end
-of this file under "Formatting overrides". Complexity rules live in `php-library-modeling.md`.
+Semantic rules for all PHP files in libraries. Formatting and structural rules are enforced by
+`phpcs.xml` (the `PSR12` ruleset plus curated Squiz, Generic, PSR2, and `SlevomatCodingStandard`
+sniffs). Three formatting rules the ruleset does not cover (single-line signatures within 120
+characters, vertical alignment of `=>` in multi-line match arms and array literals, no trailing
+comma in multi-line lists) are documented at the end of this file under "Formatting overrides".
+Single spacing between a type hint and its parameter is mechanically enforced by the
+`Squiz.Functions.FunctionDeclarationArgumentSpacing` sniff. Complexity rules live in `php-library-modeling.md`.
 Folder structure, public API boundary, and the semantics of `Internal/` live in
 `php-library-architecture.md`.
 
@@ -829,8 +831,7 @@ public function classify(int $score): Grade
 
 ## Formatting overrides
 
-Four formatting rules are not covered by the canonical `phpcs.xml` (which references `PSR-12`
-only). Apply them manually.
+Three formatting rules are not covered by the canonical `phpcs.xml`. Apply them manually.
 
 ### Single-line signatures within 120 characters
 
@@ -859,36 +860,9 @@ private function __construct(public ExternalReference $id, public Money $amount,
 ```
 
 When the one-line form would exceed 120 characters, break to one parameter per line and apply the
-no-vertical-alignment and no-trailing-comma rules below.
-
-### No vertical alignment in parameter lists
-
-Use a single space between the type and the variable name in parameter lists (constructors,
-function signatures, closures). Never pad with extra spaces to align columns. This rule applies
-only to parameter lists, not to other contexts that use `=>` alignment (see "Vertical alignment
-of `=>`" below).
-
-**Prohibited.** Vertical alignment of types:
-
-```php
-public function __construct(
-    public OrderId     $id,
-    public Money       $total,
-    public Customer    $customer,
-    public Precision   $precision
-) {}
-```
-
-**Correct.** Single space between type and variable:
-
-```php
-public function __construct(
-    public OrderId $id,
-    public Money $total,
-    public Customer $customer,
-    public Precision $precision
-) {}
-```
+no-trailing-comma rule below. Single spacing between a type hint and its parameter (never padded to
+align columns) is enforced mechanically by the `Squiz.Functions.FunctionDeclarationArgumentSpacing`
+sniff, so it is not a manual override.
 
 ### Vertical alignment of `=>` in match arms and array literals
 

@@ -11,6 +11,7 @@
         - [Creating from a database timestamp](#creating-from-a-database-timestamp)
         - [Creating from Unix seconds](#creating-from-unix-seconds)
         - [Adding and subtracting time](#adding-and-subtracting-time)
+        - [Adding and subtracting months and years](#adding-and-subtracting-months-and-years)
         - [Measuring distance between instants](#measuring-distance-between-instants)
         - [Comparing instants](#comparing-instants)
         - [Emitting with sub-second precision](#emitting-with-sub-second-precision)
@@ -53,6 +54,7 @@
         - [Projecting an Instant](#projecting-an-instant)
         - [Comparing dates](#comparing-dates)
         - [Day arithmetic](#day-arithmetic)
+        - [Month and year arithmetic](#month-and-year-arithmetic)
         - [Serializing with the mapper](#serializing-with-the-mapper-1)
     + [Timezone](#timezone)
         - [Creating from an identifier](#creating-from-an-identifier)
@@ -71,10 +73,10 @@
 
 ## Overview
 
-Models time as immutable value objects for PHP, including instants, durations, periods, timezones, time-of-day,
-local dates, and day-of-week. All instants are normalized to UTC with microsecond precision, with strict parsing,
-formatting, and arithmetic operations. Declared as `final readonly class` for language-level immutability, with
-structural equality provided by the tiny-blocks value-object contract.
+Models time as immutable value objects for PHP, including instants, durations, periods, timezones, time-of-day, local
+dates, and day-of-week. All instants are normalized to UTC with microsecond precision, with strict parsing, formatting,
+and arithmetic operations. Declared as `final readonly class` for language-level immutability, with structural equality
+provided by the tiny-blocks value-object contract.
 
 ## Installation
 
@@ -194,6 +196,46 @@ $instant->plus(duration: Duration::fromHours(hours: 2))->toIso8601();       # 20
 $instant->minus(duration: Duration::fromSeconds(seconds: 60))->toIso8601(); # 2026-02-17T09:59:00+00:00
 ```
 
+#### Adding and subtracting months and years
+
+Re-anchors the instant in a timezone (UTC when omitted), shifts the local calendar date by whole months or years with
+the same day clamping as `LocalDate`, and normalizes the result back to UTC. The local time of day, including
+microseconds, is preserved.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Instant;
+
+$instant = Instant::fromString(value: '2026-01-31T10:00:00+00:00');
+
+$instant->plusMonths(months: 1)->toIso8601();   # 2026-02-28T10:00:00+00:00 (clamped)
+$instant->plusYears(years: 1)->toIso8601();     # 2027-01-31T10:00:00+00:00
+$instant->minusMonths(months: 1)->toIso8601();  # 2025-12-31T10:00:00+00:00
+$instant->minusYears(years: 1)->toIso8601();    # 2025-01-31T10:00:00+00:00
+```
+
+Passing a timezone re-anchors the shift in that zone. When the resulting local wall time does not exist because of a
+spring-forward gap, PHP shifts it forward by the gap.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Instant;
+use TinyBlocks\Time\Timezone;
+
+$newYork = Timezone::from(identifier: 'America/New_York');
+$instant = Instant::fromString(value: '2026-02-08T07:30:00+00:00');
+
+# The local time 2026-02-08 02:30 plus one month targets the non-existent local 2026-03-08 02:30,
+# so PHP resolves it forward to 03:30 -04:00.
+$instant->plusMonths(months: 1, zone: $newYork)->toIso8601(); # 2026-03-08T07:30:00+00:00
+```
+
 #### Measuring distance between instants
 
 Returns the absolute `Duration` between two `Instant` objects.
@@ -245,8 +287,8 @@ $later->isAfterOrEqual(other: $earlier);   # true
 
 #### Emitting with sub-second precision
 
-By default `toIso8601()` emits seconds only. Pass a `Precision` value to include fractional
-seconds in the output. Existing callers that omit the argument are unaffected.
+By default `toIso8601()` emits seconds only. Pass a `Precision` value to include fractional seconds in the output.
+Existing callers that omit the argument are unaffected.
 
 ```php
 <?php
@@ -403,17 +445,16 @@ $duration->toDays();    # 0
 
 ### MonotonicClock
 
-A `MonotonicClock` exposes a high-resolution counter for measuring elapsed time, conceptually
-distinct from `Duration`: `Duration` is a wall-clock quantity measured in whole seconds, while
-a monotonic reading is an opaque nanosecond counter whose absolute value carries no calendar
-meaning and is only useful as the delta between two readings on the same clock. The default
+A `MonotonicClock` exposes a high-resolution counter for measuring elapsed time, conceptually distinct from `Duration`:
+`Duration` is a wall-clock quantity measured in whole seconds, while a monotonic reading is an opaque nanosecond counter
+whose absolute value carries no calendar meaning and is only useful as the delta between two readings on the same clock.
+The default
 `SystemMonotonicClock` implementation is backed by PHP's `hrtime(true)`.
 
 #### Reading the current nanoseconds
 
-Returns the current monotonic reading as an integer nanosecond count. The value has no calendar
-meaning. Treat it as an opaque counter and only compare it to another reading from the same
-clock.
+Returns the current monotonic reading as an integer nanosecond count. The value has no calendar meaning. Treat it as an
+opaque counter and only compare it to another reading from the same clock.
 
 ```php
 <?php
@@ -429,8 +470,8 @@ $clock->nanoseconds(); # 12345678901234 (an opaque counter, not a calendar value
 
 #### Measuring an elapsed window
 
-Subtract two successive readings on the same clock to obtain the elapsed interval in
-nanoseconds. Readings are guaranteed to be non-decreasing.
+Subtract two successive readings on the same clock to obtain the elapsed interval in nanoseconds. Readings are
+guaranteed to be non-decreasing.
 
 ```php
 <?php
@@ -451,20 +492,19 @@ $elapsedNanos = $clock->nanoseconds() - $start;
 
 ### Stopwatch
 
-A `Stopwatch` separates the act of measuring from the value being measured. It captures a
-starting reading from a `MonotonicClock` and exposes the accumulated interval as an `Elapsed`
-value object. The clock is injected explicitly so the time source stays under the caller's
-control, and reading the interval is idempotent: invoking `elapsed()` more than once returns
-successive measurements from the same starting reading.
+A `Stopwatch` separates the act of measuring from the value being measured. It captures a starting reading from a
+`MonotonicClock` and exposes the accumulated interval as an `Elapsed`
+value object. The clock is injected explicitly so the time source stays under the caller's control, and reading the
+interval is idempotent: invoking `elapsed()` more than once returns successive measurements from the same starting
+reading.
 
-`Elapsed` is a pure value object expressed in nanoseconds. It is distinct from `Duration`, which
-models wall-clock seconds, and nanosecond and second granularities are kept in separate types so
-the intent of each measurement stays explicit at the call site.
+`Elapsed` is a pure value object expressed in nanoseconds. It is distinct from `Duration`, which models wall-clock
+seconds, and nanosecond and second granularities are kept in separate types so the intent of each measurement stays
+explicit at the call site.
 
 #### Starting a stopwatch
 
-Captures the current reading of the provided monotonic clock and returns a stopwatch anchored to
-that moment.
+Captures the current reading of the provided monotonic clock and returns a stopwatch anchored to that moment.
 
 ```php
 <?php
@@ -479,9 +519,8 @@ $stopwatch = Stopwatch::start(clock: new SystemMonotonicClock());
 
 #### Reading the elapsed interval
 
-Returns an `Elapsed` measuring the interval between the starting reading and the current reading
-of the same clock. `toMilliseconds()` converts the nanosecond count to milliseconds rounded to
-two decimal places.
+Returns an `Elapsed` measuring the interval between the starting reading and the current reading of the same clock.
+`toMilliseconds()` converts the nanosecond count to milliseconds rounded to two decimal places.
 
 ```php
 <?php
@@ -502,8 +541,7 @@ $stopwatch->elapsed()->toMilliseconds(); # 1.5
 #### Reading the elapsed interval more than once
 
 The starting reading is captured once and never changes. Each call to `elapsed()` returns a new
-`Elapsed` measured from that same anchor, so successive calls report a non-decreasing series of
-intervals.
+`Elapsed` measured from that same anchor, so successive calls report a non-decreasing series of intervals.
 
 ```php
 <?php
@@ -840,8 +878,8 @@ $time->toString();                # 08:30
 
 ### LocalDate
 
-A `LocalDate` is a value object representing a calendar date (year, month, day) without time and without timezone.
-Dates are always in the proleptic Gregorian calendar and restricted to the range `0001–9999`.
+A `LocalDate` is a value object representing a calendar date (year, month, day) without time and without timezone. Dates
+are always in the proleptic Gregorian calendar and restricted to the range `0001–9999`.
 
 #### Creating from components
 
@@ -938,6 +976,33 @@ $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
 $date->plusDays(days: 10)->toIso8601();  # 2026-06-02
 $date->minusDays(days: 30)->toIso8601(); # 2026-04-23
+```
+
+#### Month and year arithmetic
+
+Shifts the year and month, then clamps the day to the last valid day of the target month. A negative count shifts in the
+opposite direction.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\LocalDate;
+
+$date = LocalDate::of(year: 2026, month: 1, day: 31);
+
+$date->plusMonths(months: 1)->toIso8601();  # 2026-02-28 (clamped, February has 28 days)
+$date->plusYears(years: 2)->toIso8601();    # 2028-01-31
+$date->minusMonths(months: 2)->toIso8601(); # 2025-11-30 (clamped, November has 30 days)
+$date->minusYears(years: 1)->toIso8601();   # 2025-01-31
+```
+
+Because the day is clamped, the shift is not associative. Adding a month and then subtracting it does not always restore
+the original day.
+
+```php
+$date->plusMonths(months: 1)->minusMonths(months: 1)->toIso8601(); # 2026-01-28
 ```
 
 #### Serializing with the mapper

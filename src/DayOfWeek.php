@@ -9,6 +9,8 @@ namespace TinyBlocks\Time;
  */
 enum DayOfWeek: int
 {
+    private const int DAYS_IN_WEEK = 7;
+
     case Monday = 1;
     case Tuesday = 2;
     case Wednesday = 3;
@@ -16,8 +18,6 @@ enum DayOfWeek: int
     case Friday = 5;
     case Saturday = 6;
     case Sunday = 7;
-
-    private const int DAYS_IN_WEEK = 7;
 
     /**
      * Derives the day of the week from an Instant.
@@ -66,6 +66,6 @@ enum DayOfWeek: int
      */
     public function distanceTo(DayOfWeek $other): int
     {
-        return ($other->value - $this->value + self::DAYS_IN_WEEK) % self::DAYS_IN_WEEK;
+        return (($other->value - $this->value + self::DAYS_IN_WEEK) % self::DAYS_IN_WEEK);
     }
 }

@@ -8,6 +8,10 @@ parameters:
         - identifier: method.nonObject
           path: src/Instant.php
 
+        # DateTimeImmutable::createFromFormat returns DateTimeImmutable|false; the recomposed wall-clock string is always well-formed, so the false branch is unreachable.
+        - identifier: method.nonObject
+          path: src/Internal/ZonedShift.php
+
         # Collectible is a @template TValue interface; the promoted constructor property $timezones cannot
         # carry a Collectible<Timezone> type parameter because PHPDoc on constructors is prohibited.
         - identifier: missingType.generics

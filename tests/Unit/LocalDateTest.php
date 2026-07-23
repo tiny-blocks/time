@@ -9,10 +9,10 @@ use DateTimeZone;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\DayOfWeek;
+use TinyBlocks\Time\Exceptions\InvalidLocalDate;
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\LocalDate;
 use TinyBlocks\Time\Timezone;
-use TinyBlocks\Time\Exceptions\InvalidLocalDate;
 
 final class LocalDateTest extends TestCase
 {
@@ -232,10 +232,10 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
         /** @When adding zero days */
-        $result = $date->plusDays(days: 0);
+        $shifted = $date->plusDays(days: 0);
 
         /** @Then the result is the same date */
-        self::assertSame('2026-05-23', $result->toIso8601());
+        self::assertSame('2026-05-23', $shifted->toIso8601());
     }
 
     public function testDayOfWeekWhenMondayThenReturnsMonday(): void
@@ -256,10 +256,10 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
         /** @When subtracting zero days */
-        $result = $date->minusDays(days: 0);
+        $shifted = $date->minusDays(days: 0);
 
         /** @Then the result is the same date */
-        self::assertSame('2026-05-23', $result->toIso8601());
+        self::assertSame('2026-05-23', $shifted->toIso8601());
     }
 
     public function testOfWhenDayAboveMaxThenInvalidLocalDate(): void
@@ -278,10 +278,22 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
         /** @When adding 7 days */
-        $result = $date->plusDays(days: 7);
+        $shifted = $date->plusDays(days: 7);
 
         /** @Then the result is 7 days later */
-        self::assertSame('2026-05-30', $result->toIso8601());
+        self::assertSame('2026-05-30', $shifted->toIso8601());
+    }
+
+    public function testPlusYearsWhenCommonDateThenShiftsYear(): void
+    {
+        /** @Given a LocalDate on a common day */
+        $date = LocalDate::of(year: 2026, month: 5, day: 15);
+
+        /** @When adding two years */
+        $shifted = $date->plusYears(years: 2);
+
+        /** @Then the year is shifted forward and the month and day are preserved */
+        self::assertSame('2028-05-15', $shifted->toIso8601());
     }
 
     public function testFromStringThenRoundTripsThroughIso8601(): void
@@ -302,10 +314,22 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
         /** @When subtracting -3 days (equivalent to adding 3) */
-        $result = $date->minusDays(days: -3);
+        $shifted = $date->minusDays(days: -3);
 
         /** @Then the result is 3 days later */
-        self::assertSame('2026-05-26', $result->toIso8601());
+        self::assertSame('2026-05-26', $shifted->toIso8601());
+    }
+
+    public function testMinusYearsWhenCommonDateThenShiftsYear(): void
+    {
+        /** @Given a LocalDate on a common day */
+        $date = LocalDate::of(year: 2026, month: 5, day: 15);
+
+        /** @When subtracting two years */
+        $shifted = $date->minusYears(years: 2);
+
+        /** @Then the year is shifted backward and the month and day are preserved */
+        self::assertSame('2024-05-15', $shifted->toIso8601());
     }
 
     public function testOfWhenValidComponentsThenDateIsCreated(): void
@@ -326,10 +350,10 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
         /** @When adding -3 days (equivalent to subtracting 3) */
-        $result = $date->plusDays(days: -3);
+        $shifted = $date->plusDays(days: -3);
 
         /** @Then the result is 3 days earlier */
-        self::assertSame('2026-05-20', $result->toIso8601());
+        self::assertSame('2026-05-20', $shifted->toIso8601());
     }
 
     public function testTodayWhenUtcThenDateIsWithinCurrentDay(): void
@@ -354,10 +378,10 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
         /** @When subtracting 7 days */
-        $result = $date->minusDays(days: 7);
+        $shifted = $date->minusDays(days: 7);
 
         /** @Then the result is 7 days earlier */
-        self::assertSame('2026-05-16', $result->toIso8601());
+        self::assertSame('2026-05-16', $shifted->toIso8601());
     }
 
     public function testDayOfWeekWhenSaturdayThenReturnsSaturday(): void
@@ -370,6 +394,18 @@ final class LocalDateTest extends TestCase
 
         /** @Then the day of the week is Saturday */
         self::assertSame(DayOfWeek::Saturday, $dayOfWeek);
+    }
+
+    public function testMinusMonthsWhenNegativeThenShiftsForward(): void
+    {
+        /** @Given a LocalDate */
+        $date = LocalDate::of(year: 2026, month: 1, day: 15);
+
+        /** @When subtracting -1 month (equivalent to adding 1) */
+        $shifted = $date->minusMonths(months: -1);
+
+        /** @Then the result is one month later */
+        self::assertSame('2026-02-15', $shifted->toIso8601());
     }
 
     public function testOfWhenLeapDayOnLeapYearThenDateIsCreated(): void
@@ -389,6 +425,18 @@ final class LocalDateTest extends TestCase
 
         /** @When trying to create a LocalDate with year 10000 (above 4-digit limit) */
         LocalDate::of(year: 10000, month: 1, day: 1);
+    }
+
+    public function testPlusMonthsWhenNegativeThenShiftsBackward(): void
+    {
+        /** @Given a LocalDate */
+        $date = LocalDate::of(year: 2026, month: 3, day: 15);
+
+        /** @When adding -1 month (equivalent to subtracting 1) */
+        $shifted = $date->plusMonths(months: -1);
+
+        /** @Then the result is one month earlier */
+        self::assertSame('2026-02-15', $shifted->toIso8601());
     }
 
     public function testOfWhenMonthAboveRangeThenInvalidLocalDate(): void
@@ -411,6 +459,66 @@ final class LocalDateTest extends TestCase
         self::assertSame(5, $date->month());
         self::assertSame(2026, $date->year());
         self::assertSame('2026-05-23', $date->toIso8601());
+    }
+
+    public function testPlusMonthsWhenZeroThenReturnsEquivalentDate(): void
+    {
+        /** @Given a LocalDate */
+        $date = LocalDate::of(year: 2026, month: 5, day: 23);
+
+        /** @When adding zero months */
+        $shifted = $date->plusMonths(months: 0);
+
+        /** @Then the result is an equivalent date */
+        self::assertSame('2026-05-23', $shifted->toIso8601());
+    }
+
+    public function testPlusYearsWhenLandsOnMaximumYearThenSucceeds(): void
+    {
+        /** @Given a date one year below the maximum supported year */
+        $date = LocalDate::of(year: 9998, month: 5, day: 15);
+
+        /** @When adding one year to reach the maximum year */
+        $shifted = $date->plusYears(years: 1);
+
+        /** @Then the result lands on the maximum supported year */
+        self::assertSame('9999-05-15', $shifted->toIso8601());
+    }
+
+    public function testPlusYearsWhenLandsOnMinimumYearThenSucceeds(): void
+    {
+        /** @Given a date one year above the minimum supported year */
+        $date = LocalDate::of(year: 2, month: 5, day: 15);
+
+        /** @When subtracting one year to reach the minimum year */
+        $shifted = $date->plusYears(years: -1);
+
+        /** @Then the result lands on the minimum supported year */
+        self::assertSame('0001-05-15', $shifted->toIso8601());
+    }
+
+    public function testPlusYearsWhenLeapDayThenClampsToTwentyEight(): void
+    {
+        /** @Given the leap day of a leap year */
+        $date = LocalDate::of(year: 2024, month: 2, day: 29);
+
+        /** @When adding one year to a common year */
+        $shifted = $date->plusYears(years: 1);
+
+        /** @Then the day is clamped to the last day of February */
+        self::assertSame('2025-02-28', $shifted->toIso8601());
+    }
+
+    public function testMinusYearsWhenLeapDayThenClampsToTwentyEight(): void
+    {
+        /** @Given the leap day of a leap year */
+        $date = LocalDate::of(year: 2024, month: 2, day: 29);
+
+        /** @When subtracting one year to a common year */
+        $shifted = $date->minusYears(years: 1);
+
+        /** @Then the day is clamped to the last day of February */
+        self::assertSame('2023-02-28', $shifted->toIso8601());
     }
 
     public function testOfWhenInvalidDayForMonthThenInvalidLocalDate(): void
@@ -441,6 +549,18 @@ final class LocalDateTest extends TestCase
         self::assertSame('0001-01-01', $date->toIso8601());
     }
 
+    public function testPlusMonthsWhenTargetIsJuneThenClampsToThirty(): void
+    {
+        /** @Given the last day of May */
+        $date = LocalDate::of(year: 2026, month: 5, day: 31);
+
+        /** @When adding one month to reach June */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the day is clamped to the last day of June */
+        self::assertSame('2026-06-30', $shifted->toIso8601());
+    }
+
     public function testInstantToLocalDateWhenUtcMidnightThenSameDate(): void
     {
         /** @Given an Instant at midnight UTC on a known date */
@@ -459,10 +579,10 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2024, month: 2, day: 28);
 
         /** @When adding 1 day */
-        $result = $date->plusDays(days: 1);
+        $shifted = $date->plusDays(days: 1);
 
         /** @Then the result is the leap day */
-        self::assertSame('2024-02-29', $result->toIso8601());
+        self::assertSame('2024-02-29', $shifted->toIso8601());
     }
 
     public function testPlusDaysWhenCrossesYearBoundaryThenShiftsYear(): void
@@ -471,10 +591,34 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 12, day: 31);
 
         /** @When adding 1 day */
-        $result = $date->plusDays(days: 1);
+        $shifted = $date->plusDays(days: 1);
 
         /** @Then the result is the first day of the following year */
-        self::assertSame('2027-01-01', $result->toIso8601());
+        self::assertSame('2027-01-01', $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenLandsOnMaximumMonthThenSucceeds(): void
+    {
+        /** @Given a date one month below the last month of the maximum year */
+        $date = LocalDate::of(year: 9999, month: 11, day: 15);
+
+        /** @When adding one month to reach the last supported month */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the result lands on the last month of the maximum year */
+        self::assertSame('9999-12-15', $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenLandsOnMinimumMonthThenSucceeds(): void
+    {
+        /** @Given a date one month above the first month of the minimum year */
+        $date = LocalDate::of(year: 1, month: 2, day: 15);
+
+        /** @When subtracting one month to reach the first supported month */
+        $shifted = $date->plusMonths(months: -1);
+
+        /** @Then the result lands on the first month of the minimum year */
+        self::assertSame('0001-01-15', $shifted->toIso8601());
     }
 
     #[DataProvider('invalidStringsDataProvider')]
@@ -495,10 +639,10 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2027, month: 1, day: 1);
 
         /** @When subtracting 1 day */
-        $result = $date->minusDays(days: 1);
+        $shifted = $date->minusDays(days: 1);
 
         /** @Then the result is the last day of the previous year */
-        self::assertSame('2026-12-31', $result->toIso8601());
+        self::assertSame('2026-12-31', $shifted->toIso8601());
     }
 
     public function testOfWhenLeapDayOnNonLeapYearThenInvalidLocalDate(): void
@@ -529,10 +673,22 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 5, day: 29);
 
         /** @When adding 3 days */
-        $result = $date->plusDays(days: 3);
+        $shifted = $date->plusDays(days: 3);
 
         /** @Then the result crosses into June */
-        self::assertSame('2026-06-01', $result->toIso8601());
+        self::assertSame('2026-06-01', $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenCrossesYearBoundaryThenShiftsYear(): void
+    {
+        /** @Given a date late in the year */
+        $date = LocalDate::of(year: 2026, month: 11, day: 15);
+
+        /** @When adding three months */
+        $shifted = $date->plusMonths(months: 3);
+
+        /** @Then the result crosses into the following year */
+        self::assertSame('2027-02-15', $shifted->toIso8601());
     }
 
     public function testMinusDaysWhenCrossesMonthBoundaryThenShiftsMonth(): void
@@ -541,10 +697,10 @@ final class LocalDateTest extends TestCase
         $date = LocalDate::of(year: 2026, month: 6, day: 1);
 
         /** @When subtracting 3 days */
-        $result = $date->minusDays(days: 3);
+        $shifted = $date->minusDays(days: 3);
 
         /** @Then the result crosses back into May */
-        self::assertSame('2026-05-29', $result->toIso8601());
+        self::assertSame('2026-05-29', $shifted->toIso8601());
     }
 
     public function testMinusDaysWhenNegativeThenMatchesPlusDaysPositive(): void
@@ -577,6 +733,30 @@ final class LocalDateTest extends TestCase
         self::assertSame($viaMinus->toIso8601(), $viaPlus->toIso8601());
     }
 
+    public function testPlusMonthsWhenDayFitsTargetMonthThenPreservesDay(): void
+    {
+        /** @Given a LocalDate whose day exists in the target month */
+        $date = LocalDate::of(year: 2026, month: 1, day: 15);
+
+        /** @When adding one month */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the day is preserved without clamping */
+        self::assertSame('2026-02-15', $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenTargetIsNovemberThenClampsToThirty(): void
+    {
+        /** @Given the last day of October */
+        $date = LocalDate::of(year: 2026, month: 10, day: 31);
+
+        /** @When adding one month to reach November */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the day is clamped to the last day of November */
+        self::assertSame('2026-11-30', $shifted->toIso8601());
+    }
+
     public function testToIso8601WhenValidDateThenReturnsFormattedString(): void
     {
         /** @Given a LocalDate for a known date */
@@ -601,6 +781,44 @@ final class LocalDateTest extends TestCase
         self::assertSame('2026-02-18', $localDate->toIso8601());
     }
 
+    public function testPlusMonthsWhenTargetIsSeptemberThenClampsToThirty(): void
+    {
+        /** @Given the last day of August */
+        $date = LocalDate::of(year: 2026, month: 8, day: 31);
+
+        /** @When adding one month to reach September */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the day is clamped to the last day of September */
+        self::assertSame('2026-09-30', $shifted->toIso8601());
+    }
+
+    public function testPlusYearsWhenBelowMinimumYearThenInvalidLocalDate(): void
+    {
+        /** @Given a date on the minimum supported year */
+        $date = LocalDate::of(year: 1, month: 5, day: 15);
+
+        /** @Then an exception indicating an out-of-range shift should be thrown */
+        $this->expectException(InvalidLocalDate::class);
+        $this->expectExceptionMessage('The shifted date falls outside the supported range 0001 to 9999.');
+
+        /** @When subtracting one year crosses below the minimum year */
+        $date->plusYears(years: -1);
+    }
+
+    public function testPlusYearsWhenExceedsMaximumYearThenInvalidLocalDate(): void
+    {
+        /** @Given a date on the maximum supported year */
+        $date = LocalDate::of(year: 9999, month: 5, day: 15);
+
+        /** @Then an exception indicating an out-of-range shift should be thrown */
+        $this->expectException(InvalidLocalDate::class);
+        $this->expectExceptionMessage('The shifted date falls outside the supported range 0001 to 9999.');
+
+        /** @When adding one year crosses above the maximum year */
+        $date->plusYears(years: 1);
+    }
+
     public function testToIso8601WhenYearBoundaryThenReturnsFormattedString(): void
     {
         /** @Given a LocalDate for the first day of a new year */
@@ -613,16 +831,78 @@ final class LocalDateTest extends TestCase
         self::assertSame('2027-01-01', $iso);
     }
 
+    public function testPlusMonthsWhenTargetIsLeapFebruaryThenClampsToLeapDay(): void
+    {
+        /** @Given the last day of January in a leap year */
+        $date = LocalDate::of(year: 2028, month: 1, day: 31);
+
+        /** @When adding one month to reach February of the leap year */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the day is clamped to the leap day */
+        self::assertSame('2028-02-29', $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenTargetMonthIsShorterThenClampsToLastDay(): void
+    {
+        /** @Given the last day of a 31-day month */
+        $date = LocalDate::of(year: 2026, month: 1, day: 31);
+
+        /** @When adding one month to reach a 28-day month */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the day is clamped to the last day of the target month */
+        self::assertSame('2026-02-28', $shifted->toIso8601());
+    }
+
+    public function testPlusYearsWhenArgumentIsIntegerMaxThenInvalidLocalDate(): void
+    {
+        /** @Given a date at a known moment */
+        $date = LocalDate::of(year: 2026, month: 5, day: 15);
+
+        /** @Then an out-of-range shift is raised instead of an arithmetic overflow */
+        $this->expectException(InvalidLocalDate::class);
+        $this->expectExceptionMessage('The shifted date falls outside the supported range 0001 to 9999.');
+
+        /** @When adding the maximum integer number of years */
+        $date->plusYears(years: PHP_INT_MAX);
+    }
+
+    public function testMinusMonthsWhenTargetMonthIsShorterThenClampsToLastDay(): void
+    {
+        /** @Given the last day of a 31-day month */
+        $date = LocalDate::of(year: 2026, month: 3, day: 31);
+
+        /** @When subtracting one month to reach a 28-day month */
+        $shifted = $date->minusMonths(months: 1);
+
+        /** @Then the day is clamped to the last day of the target month */
+        self::assertSame('2026-02-28', $shifted->toIso8601());
+    }
+
     public function testPlusDaysWhenFollowedByMinusDaysThenReturnsOriginalDate(): void
     {
         /** @Given a LocalDate */
         $date = LocalDate::of(year: 2026, month: 5, day: 23);
 
         /** @When adding 10 days and then subtracting 10 days */
-        $result = $date->plusDays(days: 10)->minusDays(days: 10);
+        $shifted = $date->plusDays(days: 10)->minusDays(days: 10);
 
         /** @Then the result is the original date */
-        self::assertSame($date->toIso8601(), $result->toIso8601());
+        self::assertSame($date->toIso8601(), $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenArgumentIsIntegerMaxThenInvalidLocalDate(): void
+    {
+        /** @Given a date at a known moment */
+        $date = LocalDate::of(year: 2026, month: 5, day: 15);
+
+        /** @Then an out-of-range shift is raised instead of an arithmetic overflow */
+        $this->expectException(InvalidLocalDate::class);
+        $this->expectExceptionMessage('The shifted date falls outside the supported range 0001 to 9999.');
+
+        /** @When adding the maximum integer number of months */
+        $date->plusMonths(months: PHP_INT_MAX);
     }
 
     public function testInstantToLocalDateWhenInUtcThenRoundTripsThroughIso8601(): void
@@ -635,6 +915,80 @@ final class LocalDateTest extends TestCase
 
         /** @Then the ISO 8601 string can be parsed back to the same date */
         self::assertSame($localDate->toIso8601(), LocalDate::fromString(value: $localDate->toIso8601())->toIso8601());
+    }
+
+    public function testPlusMonthsWhenFollowedByMinusMonthsThenIsNotAssociative(): void
+    {
+        /** @Given the last day of a 31-day month */
+        $date = LocalDate::of(year: 2026, month: 1, day: 31);
+
+        /** @When adding one month and then subtracting one month */
+        $shifted = $date->plusMonths(months: 1)->minusMonths(months: 1);
+
+        /** @Then the clamped day is not restored, so the operation is not associative */
+        self::assertSame('2026-01-28', $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenTargetMonthHasThirtyDaysThenClampsToThirty(): void
+    {
+        /** @Given the last day of a 31-day month */
+        $date = LocalDate::of(year: 2026, month: 1, day: 31);
+
+        /** @When adding three months to reach a 30-day month */
+        $shifted = $date->plusMonths(months: 3);
+
+        /** @Then the day is clamped to the last day of the target month */
+        self::assertSame('2026-04-30', $shifted->toIso8601());
+    }
+
+    public function testMinusMonthsWhenResultBelowMinimumYearThenInvalidLocalDate(): void
+    {
+        /** @Given the first day of the minimum supported year */
+        $date = LocalDate::of(year: 1, month: 1, day: 1);
+
+        /** @Then an exception indicating an out-of-range shift should be thrown */
+        $this->expectException(InvalidLocalDate::class);
+        $this->expectExceptionMessage('The shifted date falls outside the supported range 0001 to 9999.');
+
+        /** @When subtracting one month crosses below the minimum year */
+        $date->minusMonths(months: 1);
+    }
+
+    public function testPlusMonthsWhenResultExceedsMaximumYearThenInvalidLocalDate(): void
+    {
+        /** @Given the last month of the maximum supported year */
+        $date = LocalDate::of(year: 9999, month: 12, day: 1);
+
+        /** @Then an exception indicating an out-of-range shift should be thrown */
+        $this->expectException(InvalidLocalDate::class);
+        $this->expectExceptionMessage('The shifted date falls outside the supported range 0001 to 9999.');
+
+        /** @When adding one month crosses above the maximum year */
+        $date->plusMonths(months: 1);
+    }
+
+    public function testPlusMonthsWhenTargetIsCommonCenturyThenClampsToTwentyEight(): void
+    {
+        /** @Given the last day of January in a common century year */
+        $date = LocalDate::of(year: 1900, month: 1, day: 31);
+
+        /** @When adding one month to reach February of the non-leap century year */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the day is clamped to the last day of February */
+        self::assertSame('1900-02-28', $shifted->toIso8601());
+    }
+
+    public function testPlusMonthsWhenTargetIsFourHundredYearLeapThenClampsToLeapDay(): void
+    {
+        /** @Given the last day of January in a year divisible by four hundred */
+        $date = LocalDate::of(year: 2000, month: 1, day: 31);
+
+        /** @When adding one month to reach February of the leap century year */
+        $shifted = $date->plusMonths(months: 1);
+
+        /** @Then the day is clamped to the leap day */
+        self::assertSame('2000-02-29', $shifted->toIso8601());
     }
 
     public function testInstantToLocalDateWhenJustPastMidnightUtcInWestZoneThenPreviousDate(): void

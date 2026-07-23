@@ -445,7 +445,7 @@ final class DurationTest extends TestCase
         $slotCount = $appointmentDuration->divide(other: $slotSize);
 
         /** @When reconstructing a Duration from the slot count and slot size */
-        $reconstructed = Duration::fromMinutes(minutes: $slotCount * $slotSize->toMinutes());
+        $reconstructed = Duration::fromMinutes(minutes: ($slotCount * $slotSize->toMinutes()));
 
         /** @Then it should match the original appointment duration */
         self::assertSame($appointmentDuration->toSeconds(), $reconstructed->toSeconds());

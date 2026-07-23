@@ -7,8 +7,8 @@ namespace Test\TinyBlocks\Time\Unit;
 use PHPUnit\Framework\TestCase;
 use Test\TinyBlocks\Time\Models\Event;
 use TinyBlocks\Mapper\Mapper;
-use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Exceptions\InvalidInstant;
+use TinyBlocks\Time\Instant;
 
 final class InstantSerializationTest extends TestCase
 {

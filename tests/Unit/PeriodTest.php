@@ -6,8 +6,8 @@ namespace Test\TinyBlocks\Time\Unit;
 
 use PHPUnit\Framework\TestCase;
 use TinyBlocks\Time\Duration;
-use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Exceptions\InvalidPeriod;
+use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\Period;
 
 final class PeriodTest extends TestCase

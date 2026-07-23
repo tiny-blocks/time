@@ -51,6 +51,6 @@ final class SystemMonotonicClockTest extends TestCase
         $endReading = $clock->nanoseconds();
 
         /** @Then the elapsed delta covers the sleep interval with generous slack */
-        self::assertGreaterThanOrEqual(100_000, $endReading - $startReading);
+        self::assertGreaterThanOrEqual(100_000, ($endReading - $startReading));
     }
 }

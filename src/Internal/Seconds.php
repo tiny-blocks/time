@@ -30,12 +30,12 @@ final readonly class Seconds
 
     public function plus(Seconds $other): Seconds
     {
-        return new Seconds(value: $this->value + $other->value);
+        return new Seconds(value: ($this->value + $other->value));
     }
 
     public function minus(Seconds $other): Seconds
     {
-        $result = $this->value - $other->value;
+        $result = ($this->value - $other->value);
 
         if ($result < self::ZERO) {
             throw InvalidSeconds::becauseResultIsNegative(current: $this->value, subtracted: $other->value);
