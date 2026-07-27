@@ -11,8 +11,8 @@ final readonly class OffsetDateTimeDecoder implements Decoder
 {
     private const string FORMAT = 'Y-m-d\TH:i:sP';
     private const string FORMAT_MICRO = 'Y-m-d\TH:i:s.uP';
-    private const string PATTERN = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}$/';
-    private const string PATTERN_MICRO = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+[+\-]\d{2}:\d{2}$/';
+    private const string PATTERN = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+\-]\d{2}:\d{2})$/';
+    private const string PATTERN_MICRO = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(?:Z|[+\-]\d{2}:\d{2})$/';
 
     public function decode(string $value): ?DateTimeImmutable
     {

@@ -1226,6 +1226,26 @@ final class InstantTest extends TestCase
                 'value'               => '2026-02-17T16:00:00.500000+05:30',
                 'expectedIso8601'     => '2026-02-17T10:30:00+00:00',
                 'expectedUnixSeconds' => 1771324200
+            ],
+            'Zulu designator'                   => [
+                'value'               => '2026-02-17T10:30:00Z',
+                'expectedIso8601'     => '2026-02-17T10:30:00+00:00',
+                'expectedUnixSeconds' => 1771324200
+            ],
+            'Zulu designator at midnight'       => [
+                'value'               => '2026-01-01T00:00:00Z',
+                'expectedIso8601'     => '2026-01-01T00:00:00+00:00',
+                'expectedUnixSeconds' => 1767225600
+            ],
+            'Zulu with microseconds'            => [
+                'value'               => '2026-02-17T10:30:00.123456Z',
+                'expectedIso8601'     => '2026-02-17T10:30:00+00:00',
+                'expectedUnixSeconds' => 1771324200
+            ],
+            'Zulu with short fraction'          => [
+                'value'               => '2026-02-17T10:30:00.272Z',
+                'expectedIso8601'     => '2026-02-17T10:30:00+00:00',
+                'expectedUnixSeconds' => 1771324200
             ]
         ];
     }
@@ -1243,7 +1263,7 @@ final class InstantTest extends TestCase
             'Truncated offset'                       => ['value' => '2026-02-17T10:30:00+00'],
             'Slash-separated date'                   => ['value' => '2026/02/17T10:30:00+00:00'],
             'Missing time separator'                 => ['value' => '2026-02-17 10:30:00+00:00'],
-            'Z suffix instead offset'                => ['value' => '2026-02-17T10:30:00Z'],
+            'Lowercase zulu designator'              => ['value' => '2026-02-17T10:30:00z'],
             'Unix timestamp as string'               => ['value' => '1771324200'],
             'Database format with invalid day'       => ['value' => '2026-02-30 08:27:21.106011'],
             'Database format with T separator'       => ['value' => '2026-02-17T08:27:21.106011'],

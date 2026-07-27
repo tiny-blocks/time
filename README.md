@@ -128,6 +128,21 @@ $instant->toIso8601();     # 2026-02-17T16:30:00+00:00
 $instant->toUnixSeconds(); # 1771345800
 ```
 
+The offset accepts the ISO 8601 zulu designator (`Z`) as an alias for `+00:00`, with or without fractional seconds.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Instant;
+
+$instant = Instant::fromString(value: '2026-02-17T10:30:00Z');
+
+$instant->toIso8601();     # 2026-02-17T10:30:00+00:00
+$instant->toUnixSeconds(); # 1771324200
+```
+
 #### Creating from a database timestamp
 
 Parses a database date-time string as UTC, with or without microsecond precision (e.g. MySQL `DATETIME`
