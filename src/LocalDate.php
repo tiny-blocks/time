@@ -107,6 +107,31 @@ final readonly class LocalDate implements ValueObject
     }
 
     /**
+     * Combines this date with a time of day, read in the given timezone, into an Instant.
+     *
+     * <p>This is the inverse of {@see Instant::toLocalDate()}. The date and the time are civil values,
+     * so the timezone is what anchors them to a point on the timeline.</p>
+     *
+     * <p>Daylight saving leaves two civil times that are not one-to-one with the timeline, and both
+     * resolve deterministically. A time inside the spring-forward gap does not exist, and it maps to the
+     * same instant as the first civil time after the gap. A time inside the fall-back overlap happens
+     * twice, and it maps to the earlier of the two, the one still on the pre-transition offset.</p>
+     *
+     * @param TimeOfDay $time The civil time of day to combine with this date.
+     * @param Timezone $zone The timezone the civil date and time are read in.
+     * @return Instant The instant those civil values denote in that timezone.
+     */
+    public function atTime(TimeOfDay $time, Timezone $zone): Instant
+    {
+        $template = '%s %02d:%02d:00';
+        $civil = sprintf($template, $this->toIso8601(), $time->hour, $time->minute);
+
+        $datetime = new DateTimeImmutable(datetime: $civil, timezone: $zone->toDateTimeZone());
+
+        return Instant::fromUnixSeconds(seconds: $datetime->getTimestamp());
+    }
+
+    /**
      * Tells whether this date is strictly after another.
      *
      * @param LocalDate $other The date to compare against.
