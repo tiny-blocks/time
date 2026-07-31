@@ -12,6 +12,7 @@ use TinyBlocks\Time\DayOfWeek;
 use TinyBlocks\Time\Exceptions\InvalidLocalDate;
 use TinyBlocks\Time\Instant;
 use TinyBlocks\Time\LocalDate;
+use TinyBlocks\Time\TimeOfDay;
 use TinyBlocks\Time\Timezone;
 
 final class LocalDateTest extends TestCase
@@ -1001,6 +1002,111 @@ final class LocalDateTest extends TestCase
 
         /** @Then the local date is the previous day relative to UTC */
         self::assertSame('2026-02-17', $localDate->toIso8601());
+    }
+
+    #[DataProvider('civilDateTimeDataProvider')]
+    public function testAtTimeWhenCivilValuesGivenThenAnchorsThemToTheTimelineOfTheZone(
+        string $date,
+        int $hour,
+        int $minute,
+        string $zone,
+        string $expected
+    ): void {
+        /** @Given a civil date, a civil time, and the timezone they are read in */
+
+        /** @When the date is combined with the time in that zone */
+        $instant = LocalDate::fromString(value: $date)->atTime(
+            time: TimeOfDay::from(hour: $hour, minute: $minute),
+            zone: Timezone::from(identifier: $zone)
+        );
+
+        /** @Then the resulting instant is the one those civil values denote */
+        self::assertSame($expected, $instant->toIso8601());
+    }
+
+    public function testAtTimeWhenCivilTimeFallsInTheSpringForwardGapThenItResolvesForward(): void
+    {
+        /** @Given the New York day when clocks jump from 02:00 straight to 03:00 */
+        $springForward = LocalDate::of(year: 2026, month: 3, day: 8);
+
+        /** @And the civil time 02:30, which does not exist on that day */
+        $newYork = Timezone::from(identifier: 'America/New_York');
+        $insideTheGap = $springForward->atTime(time: TimeOfDay::from(hour: 2, minute: 30), zone: $newYork);
+
+        /** @When the first civil time after the gap is anchored in the same zone */
+        $afterTheGap = $springForward->atTime(time: TimeOfDay::from(hour: 3, minute: 30), zone: $newYork);
+
+        /** @Then the nonexistent time lands on the same instant as the time right after the gap */
+        self::assertSame($afterTheGap->toIso8601(), $insideTheGap->toIso8601());
+        self::assertSame('2026-03-08T07:30:00+00:00', $insideTheGap->toIso8601());
+    }
+
+    public function testAtTimeWhenCivilTimeFallsInTheFallBackOverlapThenItResolvesToTheEarlierOccurrence(): void
+    {
+        /** @Given the New York day when 01:30 happens twice, first on -04:00 and then on -05:00 */
+        $newYork = Timezone::from(identifier: 'America/New_York');
+
+        /** @When the ambiguous civil time is anchored in that zone */
+        $ambiguous = LocalDate::of(year: 2026, month: 11, day: 1)
+            ->atTime(time: TimeOfDay::from(hour: 1, minute: 30), zone: $newYork);
+
+        /** @Then it lands on the earlier of the two, the one still on the pre-transition offset */
+        self::assertSame('2026-11-01T05:30:00+00:00', $ambiguous->toIso8601());
+    }
+
+    public function testAtTimeWhenTheInstantIsReadBackInTheSameZoneThenTheCivilDateSurvives(): void
+    {
+        /** @Given a civil date anchored at a time whose UTC day differs from the local one */
+        $saoPaulo = Timezone::from(identifier: 'America/Sao_Paulo');
+        $date = LocalDate::of(year: 2026, month: 6, day: 15);
+
+        /** @When the resulting instant is read back as a local date in the same zone */
+        $roundTripped = $date->atTime(time: TimeOfDay::from(hour: 22, minute: 0), zone: $saoPaulo)
+            ->toLocalDate(zone: $saoPaulo);
+
+        /** @Then the civil date survives the round trip */
+        self::assertSame($date->toIso8601(), $roundTripped->toIso8601());
+    }
+
+    public static function civilDateTimeDataProvider(): array
+    {
+        return [
+            'UTC anchors the civil values unchanged'  => [
+                'date'     => '2026-02-17',
+                'hour'     => 10,
+                'minute'   => 30,
+                'zone'     => 'UTC',
+                'expected' => '2026-02-17T10:30:00+00:00'
+            ],
+            'Zone behind UTC shifts the instant late' => [
+                'date'     => '2026-02-17',
+                'hour'     => 10,
+                'minute'   => 30,
+                'zone'     => 'America/Sao_Paulo',
+                'expected' => '2026-02-17T13:30:00+00:00'
+            ],
+            'Local midnight is not UTC midnight'      => [
+                'date'     => '2026-06-15',
+                'hour'     => 0,
+                'minute'   => 0,
+                'zone'     => 'America/Sao_Paulo',
+                'expected' => '2026-06-15T03:00:00+00:00'
+            ],
+            'Zone ahead of UTC shifts it early'       => [
+                'date'     => '2026-02-17',
+                'hour'     => 10,
+                'minute'   => 30,
+                'zone'     => 'Europe/Lisbon',
+                'expected' => '2026-02-17T10:30:00+00:00'
+            ],
+            'Standard time before the spring jump'    => [
+                'date'     => '2026-03-08',
+                'hour'     => 1,
+                'minute'   => 30,
+                'zone'     => 'America/New_York',
+                'expected' => '2026-03-08T06:30:00+00:00'
+            ]
+        ];
     }
 
     public static function invalidStringsDataProvider(): array

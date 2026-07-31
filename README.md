@@ -52,6 +52,7 @@
         - [Creating from a string](#creating-from-a-string-2)
         - [Today in a timezone](#today-in-a-timezone)
         - [Projecting an Instant](#projecting-an-instant)
+        - [Anchoring a date to the timeline](#anchoring-a-date-to-the-timeline)
         - [Comparing dates](#comparing-dates)
         - [Day arithmetic](#day-arithmetic)
         - [Month and year arithmetic](#month-and-year-arithmetic)
@@ -463,8 +464,7 @@ $duration->toDays();    # 0
 A `MonotonicClock` exposes a high-resolution counter for measuring elapsed time, conceptually distinct from `Duration`:
 `Duration` is a wall-clock quantity measured in whole seconds, while a monotonic reading is an opaque nanosecond counter
 whose absolute value carries no calendar meaning and is only useful as the delta between two readings on the same clock.
-The default
-`SystemMonotonicClock` implementation is backed by PHP's `hrtime(true)`.
+The default `SystemMonotonicClock` implementation is backed by PHP's `hrtime(true)`.
 
 #### Reading the current nanoseconds
 
@@ -508,10 +508,9 @@ $elapsedNanos = $clock->nanoseconds() - $start;
 ### Stopwatch
 
 A `Stopwatch` separates the act of measuring from the value being measured. It captures a starting reading from a
-`MonotonicClock` and exposes the accumulated interval as an `Elapsed`
-value object. The clock is injected explicitly so the time source stays under the caller's control, and reading the
-interval is idempotent: invoking `elapsed()` more than once returns successive measurements from the same starting
-reading.
+`MonotonicClock` and exposes the accumulated interval as an `Elapsed` value object. The clock is injected explicitly so
+the time source stays under the caller's control, and reading the interval is idempotent: invoking `elapsed()` more than
+once returns successive measurements from the same starting reading.
 
 `Elapsed` is a pure value object expressed in nanoseconds. It is distinct from `Duration`, which models wall-clock
 seconds, and nanosecond and second granularities are kept in separate types so the intent of each measurement stays
@@ -555,8 +554,8 @@ $stopwatch->elapsed()->toMilliseconds(); # 1.5
 
 #### Reading the elapsed interval more than once
 
-The starting reading is captured once and never changes. Each call to `elapsed()` returns a new
-`Elapsed` measured from that same anchor, so successive calls report a non-decreasing series of intervals.
+The starting reading is captured once and never changes. Each call to `elapsed()` returns a new `Elapsed` measured from
+that same anchor, so successive calls report a non-decreasing series of intervals.
 
 ```php
 <?php
@@ -958,6 +957,43 @@ $instant = Instant::fromString(value: '2026-05-23T12:00:00+00:00');
 $date = $instant->toLocalDate(zone: Timezone::utc());
 
 $date->toIso8601(); # 2026-05-23
+```
+
+#### Anchoring a date to the timeline
+
+`atTime` is the inverse of `Instant::toLocalDate`. A `LocalDate` and a `TimeOfDay` are both civil values, so the
+timezone is what turns them into a point on the timeline.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\LocalDate;
+use TinyBlocks\Time\TimeOfDay;
+use TinyBlocks\Time\Timezone;
+
+$date = LocalDate::of(year: 2026, month: 6, day: 15);
+$instant = $date->atTime(
+    time: TimeOfDay::from(hour: 0, minute: 0),
+    zone: Timezone::from(identifier: 'America/Sao_Paulo')
+);
+
+$instant->toIso8601(); # 2026-06-15T03:00:00+00:00
+```
+
+Daylight saving leaves two civil times that are not one-to-one with the timeline, and both resolve deterministically. A
+time inside the spring-forward gap does not exist, and it maps to the same instant as the first civil time after the
+gap. A time inside the fall-back overlap happens twice, and it maps to the earlier of the two, the one still on the
+pre-transition offset.
+
+```php
+$springForward = LocalDate::of(year: 2026, month: 3, day: 8);
+$newYork = Timezone::from(identifier: 'America/New_York');
+
+# 02:30 does not exist on this day, so it lands where 03:30 lands.
+$springForward->atTime(time: TimeOfDay::from(hour: 2, minute: 30), zone: $newYork)->toIso8601();
+# 2026-03-08T07:30:00+00:00
 ```
 
 #### Comparing dates
