@@ -3,42 +3,35 @@ parameters:
     paths:
         - src
         - tests
+    tmpDir: reports/phpstan
     ignoreErrors:
         # DateTimeImmutable::createFromFormat returns DateTimeImmutable|false; the UNIX format 'U' always succeeds for a valid integer, so the false branch is unreachable.
         - identifier: method.nonObject
           path: src/Instant.php
-
         # DateTimeImmutable::createFromFormat returns DateTimeImmutable|false; the recomposed wall-clock string is always well-formed, so the false branch is unreachable.
         - identifier: method.nonObject
           path: src/Internal/ZonedShift.php
-
         # Collectible is a @template TValue interface; the promoted constructor property $timezones cannot
         # carry a Collectible<Timezone> type parameter because PHPDoc on constructors is prohibited.
         - identifier: missingType.generics
           path: src/Timezones.php
-
         # Collectible operations surface as mixed at level max, so return.type fires on three members here:
         # findBy() (mixed narrowed to Timezone by the collection invariant), toStrings() (toArray() yields a
         # less specific iterable value type), and all() (single-pass spread of a non-generic Collectible
         # infers list<mixed> instead of list<Timezone>).
         - identifier: return.type
           path: src/Timezones.php
-
         # Collection::createFrom expects iterable<int, mixed>; variadic packed arrays and toArray() results carry less specific keys.
         - identifier: argument.type
           path: src/Timezones.php
-
         # PHPDoc is prohibited inside tests/ per documentation rule; suppress missing iterable value-type on data providers.
         - identifier: missingType.iterableValue
           path: tests
-
         # PHPDoc is prohibited anywhere inside src/Internal/ per architecture rule. TextDecoder's constructor parameter $decoders is intentionally untyped; suppress missing iterable value-type plus cascading errors from iterating the now-mixed array.
         - identifier: missingType.iterableValue
           path: src/Internal
-
         - identifier: method.nonObject
           path: src/Internal/TextDecoder.php
-
         - identifier: return.type
           path: src/Internal/TextDecoder.php
     reportUnmatchedIgnoredErrors: true
