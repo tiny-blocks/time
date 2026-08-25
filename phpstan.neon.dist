@@ -5,9 +5,6 @@ parameters:
         - tests
     tmpDir: reports/phpstan
     ignoreErrors:
-        # DateTimeImmutable::createFromFormat returns DateTimeImmutable|false; the UNIX format 'U' always succeeds for a valid integer, so the false branch is unreachable.
-        - identifier: method.nonObject
-          path: src/Instant.php
         # DateTimeImmutable::createFromFormat returns DateTimeImmutable|false; the recomposed wall-clock string is always well-formed, so the false branch is unreachable.
         - identifier: method.nonObject
           path: src/Internal/ZonedShift.php

@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace TinyBlocks\Time\Internal;
 
 use TinyBlocks\Time\Exceptions\InvalidSeconds;
+use TinyBlocks\Vo\ValueObject;
+use TinyBlocks\Vo\ValueObjectBehavior;
 
-final readonly class Seconds
+final readonly class Seconds implements ValueObject
 {
+    use ValueObjectBehavior;
+
     private const int ZERO = 0;
 
     private function __construct(public int $value)

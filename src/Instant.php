@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use TinyBlocks\Mapper\ScalarCodec;
 use TinyBlocks\Time\Exceptions\InvalidInstant;
 use TinyBlocks\Time\Exceptions\InvalidLocalDate;
+use TinyBlocks\Time\Internal\IsoMoment;
 use TinyBlocks\Time\Internal\TextDecoder;
 use TinyBlocks\Time\Internal\ZonedShift;
 use TinyBlocks\Vo\ValueObject;
@@ -15,20 +16,25 @@ use TinyBlocks\Vo\ValueObjectBehavior;
 
 /**
  * Represents a single point on the timeline, always normalized to UTC with microsecond precision.
+ *
+ * <p>Two instances of this type for the same moment are always equal by value. The state is the
+ * canonical UTC text at microsecond precision rather than a date-time object, because structural
+ * equality compares a property that is not itself a value object by identity: an instance holding a
+ * date-time object would never equal another holding the same moment, and neither would any value
+ * object that wraps one.</p>
  */
 #[ScalarCodec(decode: 'fromString', encode: 'toIso8601')]
 final readonly class Instant implements ValueObject
 {
     use ValueObjectBehavior;
 
-    private const string UNIX_FORMAT = 'U';
     private const string OFFSET_FORMAT = 'P';
     private const string ISO8601_FORMAT = 'Y-m-d\TH:i:sP';
     private const string ISO8601_MICRO_FORMAT = 'Y-m-d\TH:i:s.uP';
     private const string ISO8601_DATETIME_FORMAT = 'Y-m-d\TH:i:s';
     private const string FRACTIONAL_SECONDS_FORMAT = 'u';
 
-    private function __construct(private DateTimeImmutable $datetime)
+    private function __construct(private string $canonical)
     {
     }
 
@@ -40,8 +46,9 @@ final readonly class Instant implements ValueObject
     public static function now(): Instant
     {
         $utc = Timezone::utc()->toDateTimeZone();
+        $datetime = new DateTimeImmutable(timezone: $utc);
 
-        return new Instant(datetime: new DateTimeImmutable(timezone: $utc));
+        return new Instant(canonical: IsoMoment::canonicalize(datetime: $datetime));
     }
 
     /**
@@ -56,7 +63,7 @@ final readonly class Instant implements ValueObject
         $decoder = TextDecoder::create();
         $datetime = $decoder->decode(value: $value);
 
-        return new Instant(datetime: $datetime);
+        return new Instant(canonical: IsoMoment::canonicalize(datetime: $datetime));
     }
 
     /**
@@ -67,10 +74,10 @@ final readonly class Instant implements ValueObject
      */
     public static function fromUnixSeconds(int $seconds): Instant
     {
-        $utc = Timezone::utc()->toDateTimeZone();
-        $datetime = DateTimeImmutable::createFromFormat(self::UNIX_FORMAT, (string)$seconds, $utc);
+        $template = '@%d';
+        $datetime = new DateTimeImmutable(datetime: sprintf($template, $seconds));
 
-        return new Instant(datetime: $datetime->setTimezone($utc));
+        return new Instant(canonical: IsoMoment::canonicalize(datetime: $datetime));
     }
 
     /**
@@ -82,9 +89,9 @@ final readonly class Instant implements ValueObject
     public function plus(Duration $duration): Instant
     {
         $template = '+%d seconds';
-        $modified = $this->datetime->modify(sprintf($template, $duration->toSeconds()));
+        $modified = $this->toDateTimeImmutable()->modify(sprintf($template, $duration->toSeconds()));
 
-        return new Instant(datetime: $modified);
+        return new Instant(canonical: IsoMoment::canonicalize(datetime: $modified));
     }
 
     /**
@@ -96,9 +103,9 @@ final readonly class Instant implements ValueObject
     public function minus(Duration $duration): Instant
     {
         $template = '-%d seconds';
-        $modified = $this->datetime->modify(sprintf($template, $duration->toSeconds()));
+        $modified = $this->toDateTimeImmutable()->modify(sprintf($template, $duration->toSeconds()));
 
-        return new Instant(datetime: $modified);
+        return new Instant(canonical: IsoMoment::canonicalize(datetime: $modified));
     }
 
     /**
@@ -109,7 +116,7 @@ final readonly class Instant implements ValueObject
      */
     public function isAfter(Instant $other): bool
     {
-        return $this->datetime > $other->datetime;
+        return $this->toDateTimeImmutable() > $other->toDateTimeImmutable();
     }
 
     /**
@@ -120,7 +127,7 @@ final readonly class Instant implements ValueObject
      */
     public function isBefore(Instant $other): bool
     {
-        return $this->datetime < $other->datetime;
+        return $this->toDateTimeImmutable() < $other->toDateTimeImmutable();
     }
 
     /**
@@ -138,10 +145,11 @@ final readonly class Instant implements ValueObject
     public function plusYears(int $years, ?Timezone $zone = null): Instant
     {
         $timezone = ($zone ?? Timezone::utc());
+        $datetime = $this->toDateTimeImmutable();
         $shiftedDate = $this->toLocalDate(zone: $timezone)->plusYears(years: $years);
-        $recomposed = ZonedShift::recompose(zone: $timezone, original: $this->datetime, shiftedDate: $shiftedDate);
+        $recomposed = ZonedShift::recompose(zone: $timezone, original: $datetime, shiftedDate: $shiftedDate);
 
-        return new Instant(datetime: $recomposed);
+        return new Instant(canonical: IsoMoment::canonicalize(datetime: $recomposed));
     }
 
     /**
@@ -168,15 +176,16 @@ final readonly class Instant implements ValueObject
     public function toIso8601(Precision $precision = Precision::Seconds): string
     {
         $template = '%s.%s%s';
+        $datetime = $this->toDateTimeImmutable();
 
         return match ($precision) {
-            Precision::Seconds      => $this->datetime->format(self::ISO8601_FORMAT),
-            Precision::Microseconds => $this->datetime->format(self::ISO8601_MICRO_FORMAT),
+            Precision::Seconds      => $datetime->format(self::ISO8601_FORMAT),
+            Precision::Microseconds => $datetime->format(self::ISO8601_MICRO_FORMAT),
             Precision::Milliseconds => sprintf(
                 $template,
-                $this->datetime->format(self::ISO8601_DATETIME_FORMAT),
-                substr($this->datetime->format(self::FRACTIONAL_SECONDS_FORMAT), 0, 3),
-                $this->datetime->format(self::OFFSET_FORMAT)
+                $datetime->format(self::ISO8601_DATETIME_FORMAT),
+                substr($datetime->format(self::FRACTIONAL_SECONDS_FORMAT), 0, 3),
+                $datetime->format(self::OFFSET_FORMAT)
             )
         };
     }
@@ -220,10 +229,11 @@ final readonly class Instant implements ValueObject
     public function plusMonths(int $months, ?Timezone $zone = null): Instant
     {
         $timezone = ($zone ?? Timezone::utc());
+        $datetime = $this->toDateTimeImmutable();
         $shiftedDate = $this->toLocalDate(zone: $timezone)->plusMonths(months: $months);
-        $recomposed = ZonedShift::recompose(zone: $timezone, original: $this->datetime, shiftedDate: $shiftedDate);
+        $recomposed = ZonedShift::recompose(zone: $timezone, original: $datetime, shiftedDate: $shiftedDate);
 
-        return new Instant(datetime: $recomposed);
+        return new Instant(canonical: IsoMoment::canonicalize(datetime: $recomposed));
     }
 
     /**
@@ -251,7 +261,7 @@ final readonly class Instant implements ValueObject
      */
     public function toLocalDate(Timezone $zone): LocalDate
     {
-        $datetime = $this->datetime->setTimezone($zone->toDateTimeZone());
+        $datetime = $this->toDateTimeImmutable()->setTimezone($zone->toDateTimeZone());
 
         return LocalDate::fromString(value: $datetime->format('Y-m-d'));
     }
@@ -265,7 +275,7 @@ final readonly class Instant implements ValueObject
      */
     public function durationUntil(Instant $other): Duration
     {
-        $difference = abs($this->datetime->getTimestamp() - $other->datetime->getTimestamp());
+        $difference = abs($this->toDateTimeImmutable()->getTimestamp() - $other->toDateTimeImmutable()->getTimestamp());
 
         return Duration::fromSeconds(seconds: $difference);
     }
@@ -277,7 +287,7 @@ final readonly class Instant implements ValueObject
      */
     public function toUnixSeconds(): int
     {
-        return $this->datetime->getTimestamp();
+        return $this->toDateTimeImmutable()->getTimestamp();
     }
 
     /**
@@ -288,7 +298,7 @@ final readonly class Instant implements ValueObject
      */
     public function isAfterOrEqual(Instant $other): bool
     {
-        return $this->datetime >= $other->datetime;
+        return $this->toDateTimeImmutable() >= $other->toDateTimeImmutable();
     }
 
     /**
@@ -299,7 +309,7 @@ final readonly class Instant implements ValueObject
      */
     public function isBeforeOrEqual(Instant $other): bool
     {
-        return $this->datetime <= $other->datetime;
+        return $this->toDateTimeImmutable() <= $other->toDateTimeImmutable();
     }
 
     /**
@@ -309,6 +319,6 @@ final readonly class Instant implements ValueObject
      */
     public function toDateTimeImmutable(): DateTimeImmutable
     {
-        return $this->datetime;
+        return IsoMoment::restore(canonical: $this->canonical);
     }
 }

@@ -109,4 +109,26 @@ final class TimezoneTest extends TestCase
             'Numeric offset' => ['identifier' => '+00:00']
         ];
     }
+
+    public function testEqualsWhenSameIdentifierThenIsTrue(): void
+    {
+        /** @Given two Timezones built separately from the same identifier */
+        $one = Timezone::from(identifier: 'America/Sao_Paulo');
+        $other = Timezone::from(identifier: 'America/Sao_Paulo');
+
+        /** @Then they are equal by value and share the hash code */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
+    public function testEqualsWhenDifferentIdentifierThenIsFalse(): void
+    {
+        /** @Given two Timezones with different identifiers */
+        $one = Timezone::utc();
+        $other = Timezone::from(identifier: 'America/Sao_Paulo');
+
+        /** @Then they are not equal and the hash codes differ */
+        self::assertFalse($one->equals(other: $other));
+        self::assertNotSame($one->hashCode(), $other->hashCode());
+    }
 }

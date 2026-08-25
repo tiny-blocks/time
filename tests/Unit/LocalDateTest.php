@@ -1125,4 +1125,39 @@ final class LocalDateTest extends TestCase
             'Date with leading whitespace'     => ['value' => ' 2026-05-23']
         ];
     }
+
+    public function testEqualsWhenSameDateThenIsTrue(): void
+    {
+        /** @Given two LocalDates built separately from the same date */
+        $one = LocalDate::fromString(value: '2026-02-17');
+        $other = LocalDate::of(year: 2026, month: 2, day: 17);
+
+        /** @Then they are equal by value and share the hash code */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
+    public function testEqualsWhenDifferentDateThenIsFalse(): void
+    {
+        /** @Given two LocalDates one day apart */
+        $one = LocalDate::fromString(value: '2026-02-17');
+        $other = LocalDate::fromString(value: '2026-02-18');
+
+        /** @Then they are not equal and the hash codes differ */
+        self::assertFalse($one->equals(other: $other));
+        self::assertNotSame($one->hashCode(), $other->hashCode());
+    }
+
+    public function testComparisonWhenSameDateBuiltApartThenNeitherPrecedesTheOther(): void
+    {
+        /** @Given the same date reached by parsing and by shifting */
+        $one = LocalDate::fromString(value: '2026-02-17');
+        $other = LocalDate::fromString(value: '2026-02-16')->plusDays(days: 1);
+
+        /** @Then the ordering depends on the date alone, never on when each was built */
+        self::assertFalse($one->isAfter(other: $other));
+        self::assertFalse($one->isBefore(other: $other));
+        self::assertTrue($one->isAfterOrEqual(other: $other));
+        self::assertTrue($one->isBeforeOrEqual(other: $other));
+    }
 }

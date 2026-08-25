@@ -419,4 +419,38 @@ final class PeriodTest extends TestCase
         /** @Then the duration should match the input */
         self::assertSame($inputDuration->toSeconds(), $duration->toSeconds());
     }
+
+    public function testEqualsWhenSameBoundsThenIsTrue(): void
+    {
+        /** @Given two Periods over the same bounds, one of them written in another offset */
+        $one = Period::from(
+            from: Instant::fromString(value: '2026-02-17T08:00:00+00:00'),
+            to: Instant::fromString(value: '2026-02-17T09:00:00+00:00')
+        );
+        $other = Period::from(
+            from: Instant::fromString(value: '2026-02-17T05:00:00-03:00'),
+            to: Instant::fromString(value: '2026-02-17T09:00:00+00:00')
+        );
+
+        /** @Then they are equal by value, which only holds because Instant compares by value */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
+    public function testEqualsWhenDifferentBoundsThenIsFalse(): void
+    {
+        /** @Given two Periods that end at different moments */
+        $one = Period::from(
+            from: Instant::fromString(value: '2026-02-17T08:00:00+00:00'),
+            to: Instant::fromString(value: '2026-02-17T09:00:00+00:00')
+        );
+        $other = Period::from(
+            from: Instant::fromString(value: '2026-02-17T08:00:00+00:00'),
+            to: Instant::fromString(value: '2026-02-17T10:00:00+00:00')
+        );
+
+        /** @Then they are not equal and the hash codes differ */
+        self::assertFalse($one->equals(other: $other));
+        self::assertNotSame($one->hashCode(), $other->hashCode());
+    }
 }

@@ -6,12 +6,18 @@ namespace TinyBlocks\Time;
 
 use DateTimeZone;
 use TinyBlocks\Time\Exceptions\InvalidTimezone;
+use TinyBlocks\Vo\ValueObject;
+use TinyBlocks\Vo\ValueObjectBehavior;
 
 /**
  * Represents a single IANA timezone identifier (e.g. America/Sao_Paulo).
+ *
+ * <p>Two instances of this type for the same identifier are always equal by value.</p>
  */
-final readonly class Timezone
+final readonly class Timezone implements ValueObject
 {
+    use ValueObjectBehavior;
+
     private function __construct(public string $value)
     {
         if ($this->value === '' || !in_array($this->value, DateTimeZone::listIdentifiers(), true)) {

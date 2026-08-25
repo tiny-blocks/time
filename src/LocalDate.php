@@ -8,13 +8,18 @@ use DateTimeImmutable;
 use TinyBlocks\Mapper\ScalarCodec;
 use TinyBlocks\Time\Exceptions\InvalidLocalDate;
 use TinyBlocks\Time\Internal\CalendarDay;
+use TinyBlocks\Time\Internal\IsoDate;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
 
 /**
  * Represents a calendar date (year, month, day) without time and without timezone.
  *
- * <p>Two instances of this type for the same date are always equal by value.</p>
+ * <p>Two instances of this type for the same date are always equal by value, and their ordering
+ * depends on the date alone. The state is the canonical text rather than a date-time object for
+ * both reasons: structural equality compares a property that is not itself a value object by
+ * identity, and a date-time object parsed from a date carries the wall clock of the moment it was
+ * parsed, which made two instances of the same date order as if one preceded the other.</p>
  */
 #[ScalarCodec(decode: 'fromString', encode: 'toIso8601')]
 final readonly class LocalDate implements ValueObject
@@ -26,7 +31,7 @@ final readonly class LocalDate implements ValueObject
     private const string DATE_FORMAT = 'Y-m-d';
     private const string DATE_PATTERN = '/^\d{4}-\d{2}-\d{2}$/';
 
-    private function __construct(private DateTimeImmutable $date)
+    private function __construct(private string $canonical)
     {
     }
 
@@ -83,7 +88,7 @@ final readonly class LocalDate implements ValueObject
             throw InvalidLocalDate::becauseValueIsInvalid(value: $value);
         }
 
-        return new LocalDate(date: $parsed);
+        return new LocalDate(canonical: IsoDate::canonicalize(datetime: $parsed));
     }
 
     /**
@@ -93,7 +98,7 @@ final readonly class LocalDate implements ValueObject
      */
     public function year(): int
     {
-        return (int)$this->date->format('Y');
+        return (int)IsoDate::restore(canonical: $this->canonical)->format('Y');
     }
 
     /**
@@ -103,7 +108,7 @@ final readonly class LocalDate implements ValueObject
      */
     public function month(): int
     {
-        return (int)$this->date->format('n');
+        return (int)IsoDate::restore(canonical: $this->canonical)->format('n');
     }
 
     /**
@@ -139,7 +144,7 @@ final readonly class LocalDate implements ValueObject
      */
     public function isAfter(LocalDate $other): bool
     {
-        return $this->date > $other->date;
+        return IsoDate::restore(canonical: $this->canonical) > IsoDate::restore(canonical: $other->canonical);
     }
 
     /**
@@ -150,7 +155,7 @@ final readonly class LocalDate implements ValueObject
      */
     public function isBefore(LocalDate $other): bool
     {
-        return $this->date < $other->date;
+        return IsoDate::restore(canonical: $this->canonical) < IsoDate::restore(canonical: $other->canonical);
     }
 
     /**
@@ -164,9 +169,9 @@ final readonly class LocalDate implements ValueObject
     public function plusDays(int $days): LocalDate
     {
         $template = '%+d days';
-        $modified = $this->date->modify(sprintf($template, $days));
+        $modified = IsoDate::restore(canonical: $this->canonical)->modify(sprintf($template, $days));
 
-        return new LocalDate(date: $modified);
+        return new LocalDate(canonical: IsoDate::canonicalize(datetime: $modified));
     }
 
     /**
@@ -176,7 +181,7 @@ final readonly class LocalDate implements ValueObject
      */
     public function dayOfWeek(): DayOfWeek
     {
-        return DayOfWeek::from((int)$this->date->format('N'));
+        return DayOfWeek::from((int)IsoDate::restore(canonical: $this->canonical)->format('N'));
     }
 
     /**
@@ -190,9 +195,9 @@ final readonly class LocalDate implements ValueObject
     public function minusDays(int $days): LocalDate
     {
         $template = '%+d days';
-        $modified = $this->date->modify(sprintf($template, -$days));
+        $modified = IsoDate::restore(canonical: $this->canonical)->modify(sprintf($template, -$days));
 
-        return new LocalDate(date: $modified);
+        return new LocalDate(canonical: IsoDate::canonicalize(datetime: $modified));
     }
 
     /**
@@ -227,7 +232,7 @@ final readonly class LocalDate implements ValueObject
      */
     public function toIso8601(): string
     {
-        return $this->date->format(self::DATE_FORMAT);
+        return $this->canonical;
     }
 
     /**
@@ -237,7 +242,7 @@ final readonly class LocalDate implements ValueObject
      */
     public function dayOfMonth(): int
     {
-        return (int)$this->date->format('j');
+        return (int)IsoDate::restore(canonical: $this->canonical)->format('j');
     }
 
     /**
@@ -317,7 +322,7 @@ final readonly class LocalDate implements ValueObject
      */
     public function isAfterOrEqual(LocalDate $other): bool
     {
-        return $this->date >= $other->date;
+        return IsoDate::restore(canonical: $this->canonical) >= IsoDate::restore(canonical: $other->canonical);
     }
 
     /**
@@ -328,6 +333,6 @@ final readonly class LocalDate implements ValueObject
      */
     public function isBeforeOrEqual(LocalDate $other): bool
     {
-        return $this->date <= $other->date;
+        return IsoDate::restore(canonical: $this->canonical) <= IsoDate::restore(canonical: $other->canonical);
     }
 }
