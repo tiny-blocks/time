@@ -1306,4 +1306,37 @@ final class InstantTest extends TestCase
             ]
         ];
     }
+
+    public function testEqualsWhenSameMomentThenIsTrue(): void
+    {
+        /** @Given two Instants built separately from the same moment */
+        $one = Instant::fromString(value: '2026-02-17T08:27:21.106011+00:00');
+        $other = Instant::fromString(value: '2026-02-17T08:27:21.106011+00:00');
+
+        /** @Then they are equal by value and share the hash code */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
+    public function testEqualsWhenSameMomentInAnotherOffsetThenIsTrue(): void
+    {
+        /** @Given two Instants for the same moment written in different offsets */
+        $one = Instant::fromString(value: '2026-02-17T08:27:21+00:00');
+        $other = Instant::fromString(value: '2026-02-17T05:27:21-03:00');
+
+        /** @Then they are equal by value, because the state is normalized to UTC */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
+    public function testEqualsWhenDifferentMomentThenIsFalse(): void
+    {
+        /** @Given two Instants one microsecond apart */
+        $one = Instant::fromString(value: '2026-02-17T08:27:21.106011+00:00');
+        $other = Instant::fromString(value: '2026-02-17T08:27:21.106012+00:00');
+
+        /** @Then they are not equal and the hash codes differ */
+        self::assertFalse($one->equals(other: $other));
+        self::assertNotSame($one->hashCode(), $other->hashCode());
+    }
 }

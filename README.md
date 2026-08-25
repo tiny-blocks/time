@@ -69,6 +69,10 @@
         - [Finding a timezone by identifier with UTC fallback](#finding-a-timezone-by-identifier-with-utc-fallback)
         - [Checking if a timezone exists in the collection](#checking-if-a-timezone-exists-in-the-collection)
         - [Getting all identifiers as strings](#getting-all-identifiers-as-strings)
+    + [Value equality](#value-equality)
+        - [Checking equality](#checking-equality)
+        - [Checking equality across factories](#checking-equality-across-factories)
+        - [Checking equality of a nested value object](#checking-equality-of-a-nested-value-object)
 * [License](#license)
 * [Contributing](#contributing)
 
@@ -1240,6 +1244,69 @@ use TinyBlocks\Time\Timezones;
 $timezones = Timezones::fromStrings('UTC', 'America/Sao_Paulo', 'Europe/London');
 
 $timezones->toStrings(); # ["UTC", "America/Sao_Paulo", "Europe/London"]
+```
+
+### Value equality
+
+Every type of this library that implements the value-object contract compares by value, never by instance. A value
+object that carries another as a property inherits that, because the comparison walks the properties structurally.
+
+#### Checking equality
+
+Two instances of the same value are equal and share the same hash code, however each one was written.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Instant;
+
+$morning = Instant::fromString(value: '2026-02-17T08:27:21+00:00');
+$sameMoment = Instant::fromString(value: '2026-02-17T05:27:21-03:00');
+
+$morning->equals(other: $sameMoment);             # true, both normalize to the same UTC moment
+$morning->hashCode() === $sameMoment->hashCode(); # true
+```
+
+#### Checking equality across factories
+
+The factory that built the instance is not part of the value, so instances from different factories are equal.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\LocalDate;
+
+$parsed = LocalDate::fromString(value: '2026-02-17');
+$composed = LocalDate::of(year: 2026, month: 2, day: 17);
+
+$parsed->equals(other: $composed);             # true
+$parsed->hashCode() === $composed->hashCode(); # true
+```
+
+#### Checking equality of a nested value object
+
+A value object holding another compares by value, because the comparison recurses into each property.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use TinyBlocks\Time\Instant;
+use TinyBlocks\Time\Period;
+
+$to = Instant::fromString(value: '2026-02-17T09:00:00+00:00');
+$from = Instant::fromString(value: '2026-02-17T08:00:00+00:00');
+$sameFrom = Instant::fromString(value: '2026-02-17T05:00:00-03:00');
+
+$period = Period::from(from: $from, to: $to);
+$samePeriod = Period::from(from: $sameFrom, to: $to);
+
+$period->equals(other: $samePeriod); # true, the comparison walks into each Instant
 ```
 
 ## License

@@ -527,4 +527,26 @@ final class DurationTest extends TestCase
         self::assertSame($fromMinutes->toSeconds(), $fromHours->toSeconds());
         self::assertSame($fromHours->toSeconds(), $fromDays->toSeconds());
     }
+
+    public function testEqualsWhenSameAmountThenIsTrue(): void
+    {
+        /** @Given the same amount of time reached by two units */
+        $one = Duration::fromMinutes(minutes: 2);
+        $other = Duration::fromSeconds(seconds: 120);
+
+        /** @Then they are equal by value and share the hash code */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
+    public function testEqualsWhenDifferentAmountThenIsFalse(): void
+    {
+        /** @Given two durations one second apart */
+        $one = Duration::fromSeconds(seconds: 120);
+        $other = Duration::fromSeconds(seconds: 121);
+
+        /** @Then they are not equal and the hash codes differ */
+        self::assertFalse($one->equals(other: $other));
+        self::assertNotSame($one->hashCode(), $other->hashCode());
+    }
 }
