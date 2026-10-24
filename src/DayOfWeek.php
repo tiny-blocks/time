@@ -62,7 +62,7 @@ enum DayOfWeek: int
      * - Monday->distanceTo(Monday) returns 0
      *
      * @param DayOfWeek $other The target day of the week.
-     * @return int The number of days forward from this day to the other (0–6).
+     * @return int The number of days forward from this day to the other (0 to 6).
      */
     public function distanceTo(DayOfWeek $other): int
     {

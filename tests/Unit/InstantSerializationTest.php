@@ -18,13 +18,13 @@ final class InstantSerializationTest extends TestCase
         $mapper = Mapper::create();
 
         /** @And an event carrying an instant and a name */
-        $event = new Event(occurredAt: Instant::fromString(value: '2026-02-17T10:30:00+00:00'), name: 'launch');
+        $event = new Event(name: 'launch', occurredAt: Instant::fromString(value: '2026-02-17T10:30:00+00:00'));
 
         /** @When the event is serialized to an array */
         $array = $mapper->toArray(source: $event);
 
         /** @Then the instant is written as a second-precision ISO 8601 string */
-        self::assertSame(['occurredAt' => '2026-02-17T10:30:00+00:00', 'name' => 'launch'], $array);
+        self::assertSame(['name' => 'launch', 'occurredAt' => '2026-02-17T10:30:00+00:00'], $array);
     }
 
     public function testToObjectWhenInstantFromOffsetStringThenNormalizesToUtc(): void

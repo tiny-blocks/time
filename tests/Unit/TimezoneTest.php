@@ -32,6 +32,17 @@ final class TimezoneTest extends TestCase
         self::assertSame('UTC', $result);
     }
 
+    public function testEqualsWhenSameIdentifierThenIsTrue(): void
+    {
+        /** @Given two Timezones built separately from the same identifier */
+        $one = Timezone::from(identifier: 'America/Sao_Paulo');
+        $other = Timezone::from(identifier: 'America/Sao_Paulo');
+
+        /** @Then they are equal by value and share the hash code */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
     public function testUtcWhenToDateTimeZoneThenNameIsUtc(): void
     {
         /** @Given a UTC Timezone */
@@ -56,6 +67,17 @@ final class TimezoneTest extends TestCase
 
         /** @And toString should return the same identifier */
         self::assertSame($identifier, $timezone->toString());
+    }
+
+    public function testEqualsWhenDifferentIdentifierThenIsFalse(): void
+    {
+        /** @Given two Timezones with different identifiers */
+        $one = Timezone::utc();
+        $other = Timezone::from(identifier: 'America/Sao_Paulo');
+
+        /** @Then they are not equal and the hash codes differ */
+        self::assertFalse($one->equals(other: $other));
+        self::assertNotSame($one->hashCode(), $other->hashCode());
     }
 
     #[DataProvider('invalidIdentifiersDataProvider')]
@@ -108,27 +130,5 @@ final class TimezoneTest extends TestCase
             'Empty string'   => ['identifier' => ''],
             'Numeric offset' => ['identifier' => '+00:00']
         ];
-    }
-
-    public function testEqualsWhenSameIdentifierThenIsTrue(): void
-    {
-        /** @Given two Timezones built separately from the same identifier */
-        $one = Timezone::from(identifier: 'America/Sao_Paulo');
-        $other = Timezone::from(identifier: 'America/Sao_Paulo');
-
-        /** @Then they are equal by value and share the hash code */
-        self::assertTrue($one->equals(other: $other));
-        self::assertSame($one->hashCode(), $other->hashCode());
-    }
-
-    public function testEqualsWhenDifferentIdentifierThenIsFalse(): void
-    {
-        /** @Given two Timezones with different identifiers */
-        $one = Timezone::utc();
-        $other = Timezone::from(identifier: 'America/Sao_Paulo');
-
-        /** @Then they are not equal and the hash codes differ */
-        self::assertFalse($one->equals(other: $other));
-        self::assertNotSame($one->hashCode(), $other->hashCode());
     }
 }

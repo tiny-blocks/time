@@ -8,7 +8,7 @@ use TinyBlocks\Time\Instant;
 
 final readonly class Event
 {
-    public function __construct(public Instant $occurredAt, public string $name)
+    public function __construct(public string $name, public Instant $occurredAt)
     {
     }
 }

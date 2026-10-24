@@ -19,6 +19,17 @@ final class DurationTest extends TestCase
         self::assertTrue($duration->isZero());
     }
 
+    public function testEqualsWhenSameAmountThenIsTrue(): void
+    {
+        /** @Given the same amount of time reached by two units */
+        $one = Duration::fromMinutes(minutes: 2);
+        $other = Duration::fromSeconds(seconds: 120);
+
+        /** @Then they are equal by value and share the hash code */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
     public function testZeroThenHoldsNoSecondsAndIsZero(): void
     {
         /** @When creating a zero Duration */
@@ -53,6 +64,17 @@ final class DurationTest extends TestCase
 
         /** @Then it should return 1 (truncated from 1.5) */
         self::assertSame(1, $result);
+    }
+
+    public function testEqualsWhenDifferentAmountThenIsFalse(): void
+    {
+        /** @Given two durations one second apart */
+        $one = Duration::fromSeconds(seconds: 120);
+        $other = Duration::fromSeconds(seconds: 121);
+
+        /** @Then they are not equal and the hash codes differ */
+        self::assertFalse($one->equals(other: $other));
+        self::assertNotSame($one->hashCode(), $other->hashCode());
     }
 
     public function testFromDaysWhenZeroThenHoldsZeroSeconds(): void
@@ -418,39 +440,6 @@ final class DurationTest extends TestCase
         self::assertFalse($result);
     }
 
-    public function testDivideWhenAppointmentSplitIntoSlotsThenSlotCountIsExact(): void
-    {
-        /** @Given a Duration of 90 minutes */
-        $appointmentDuration = Duration::fromMinutes(minutes: 90);
-
-        /** @And a slot size of 30 minutes */
-        $slotSize = Duration::fromMinutes(minutes: 30);
-
-        /** @When dividing the appointment by the slot size */
-        $slotCount = $appointmentDuration->divide(other: $slotSize);
-
-        /** @Then the slot count should be 3 */
-        self::assertSame(3, $slotCount);
-    }
-
-    public function testFromMinutesWhenReconstructedFromSlotCountThenMatchesOriginal(): void
-    {
-        /** @Given a Duration of 90 minutes */
-        $appointmentDuration = Duration::fromMinutes(minutes: 90);
-
-        /** @And a slot size of 30 minutes */
-        $slotSize = Duration::fromMinutes(minutes: 30);
-
-        /** @And the slot count obtained by dividing the appointment by the slot size */
-        $slotCount = $appointmentDuration->divide(other: $slotSize);
-
-        /** @When reconstructing a Duration from the slot count and slot size */
-        $reconstructed = Duration::fromMinutes(minutes: ($slotCount * $slotSize->toMinutes()));
-
-        /** @Then it should match the original appointment duration */
-        self::assertSame($appointmentDuration->toSeconds(), $reconstructed->toSeconds());
-    }
-
     public function testPlusAndMinusWhenAppliedWithSameAmountThenAreInverse(): void
     {
         /** @Given a Duration of 45 minutes */
@@ -481,6 +470,21 @@ final class DurationTest extends TestCase
         $tenMinutes->minus(other: $thirtyMinutes);
     }
 
+    public function testDivideWhenAppointmentSplitIntoSlotsThenSlotCountIsExact(): void
+    {
+        /** @Given a Duration of 90 minutes */
+        $appointmentDuration = Duration::fromMinutes(minutes: 90);
+
+        /** @And a slot size of 30 minutes */
+        $slotSize = Duration::fromMinutes(minutes: 30);
+
+        /** @When dividing the appointment by the slot size */
+        $slotCount = $appointmentDuration->divide(other: $slotSize);
+
+        /** @Then the slot count should be 3 */
+        self::assertSame(3, $slotCount);
+    }
+
     public function testFromSecondsWhenPositiveValueThenHoldsThatNumberOfSeconds(): void
     {
         /** @When creating a Duration from 1800 seconds */
@@ -491,6 +495,24 @@ final class DurationTest extends TestCase
 
         /** @And it should not be zero */
         self::assertFalse($duration->isZero());
+    }
+
+    public function testFromMinutesWhenReconstructedFromSlotCountThenMatchesOriginal(): void
+    {
+        /** @Given a Duration of 90 minutes */
+        $appointmentDuration = Duration::fromMinutes(minutes: 90);
+
+        /** @And a slot size of 30 minutes */
+        $slotSize = Duration::fromMinutes(minutes: 30);
+
+        /** @And the slot count obtained by dividing the appointment by the slot size */
+        $slotCount = $appointmentDuration->divide(other: $slotSize);
+
+        /** @When reconstructing a Duration from the slot count and slot size */
+        $reconstructed = Duration::fromMinutes(minutes: ($slotCount * $slotSize->toMinutes()));
+
+        /** @Then it should match the original appointment duration */
+        self::assertSame($appointmentDuration->toSeconds(), $reconstructed->toSeconds());
     }
 
     public function testDivideWhenDivisorIsZeroDurationFromSecondsThenThrowsInvalidSeconds(): void
@@ -526,27 +548,5 @@ final class DurationTest extends TestCase
         self::assertSame($fromSeconds->toSeconds(), $fromMinutes->toSeconds());
         self::assertSame($fromMinutes->toSeconds(), $fromHours->toSeconds());
         self::assertSame($fromHours->toSeconds(), $fromDays->toSeconds());
-    }
-
-    public function testEqualsWhenSameAmountThenIsTrue(): void
-    {
-        /** @Given the same amount of time reached by two units */
-        $one = Duration::fromMinutes(minutes: 2);
-        $other = Duration::fromSeconds(seconds: 120);
-
-        /** @Then they are equal by value and share the hash code */
-        self::assertTrue($one->equals(other: $other));
-        self::assertSame($one->hashCode(), $other->hashCode());
-    }
-
-    public function testEqualsWhenDifferentAmountThenIsFalse(): void
-    {
-        /** @Given two durations one second apart */
-        $one = Duration::fromSeconds(seconds: 120);
-        $other = Duration::fromSeconds(seconds: 121);
-
-        /** @Then they are not equal and the hash codes differ */
-        self::assertFalse($one->equals(other: $other));
-        self::assertNotSame($one->hashCode(), $other->hashCode());
     }
 }
