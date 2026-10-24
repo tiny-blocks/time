@@ -107,6 +107,17 @@ final class LocalDateTest extends TestCase
         self::assertFalse($isBefore);
     }
 
+    public function testEqualsWhenSameDateThenIsTrue(): void
+    {
+        /** @Given two LocalDates built separately from the same date */
+        $one = LocalDate::fromString(value: '2026-02-17');
+        $other = LocalDate::of(year: 2026, month: 2, day: 17);
+
+        /** @Then they are equal by value and share the hash code */
+        self::assertTrue($one->equals(other: $other));
+        self::assertSame($one->hashCode(), $other->hashCode());
+    }
+
     public function testIsAfterOrEqualWhenAfterThenTrue(): void
     {
         /** @Given a later date */
@@ -205,6 +216,17 @@ final class LocalDateTest extends TestCase
 
         /** @When trying to create a LocalDate with day zero */
         LocalDate::of(year: 2026, month: 1, day: 0);
+    }
+
+    public function testEqualsWhenDifferentDateThenIsFalse(): void
+    {
+        /** @Given two LocalDates one day apart */
+        $one = LocalDate::fromString(value: '2026-02-17');
+        $other = LocalDate::fromString(value: '2026-02-18');
+
+        /** @Then they are not equal and the hash codes differ */
+        self::assertFalse($one->equals(other: $other));
+        self::assertNotSame($one->hashCode(), $other->hashCode());
     }
 
     public function testOfWhenYearZeroThenInvalidLocalDate(): void
@@ -980,6 +1002,19 @@ final class LocalDateTest extends TestCase
         self::assertSame('1900-02-28', $shifted->toIso8601());
     }
 
+    public function testComparisonWhenSameDateBuiltApartThenNeitherPrecedesTheOther(): void
+    {
+        /** @Given the same date reached by parsing and by shifting */
+        $one = LocalDate::fromString(value: '2026-02-17');
+        $other = LocalDate::fromString(value: '2026-02-16')->plusDays(days: 1);
+
+        /** @Then the ordering depends on the date alone, never on when each was built */
+        self::assertFalse($one->isAfter(other: $other));
+        self::assertFalse($one->isBefore(other: $other));
+        self::assertTrue($one->isAfterOrEqual(other: $other));
+        self::assertTrue($one->isBeforeOrEqual(other: $other));
+    }
+
     public function testPlusMonthsWhenTargetIsFourHundredYearLeapThenClampsToLeapDay(): void
     {
         /** @Given the last day of January in a year divisible by four hundred */
@@ -990,18 +1025,6 @@ final class LocalDateTest extends TestCase
 
         /** @Then the day is clamped to the leap day */
         self::assertSame('2000-02-29', $shifted->toIso8601());
-    }
-
-    public function testInstantToLocalDateWhenJustPastMidnightUtcInWestZoneThenPreviousDate(): void
-    {
-        /** @Given an Instant at 00:30 UTC on 2026-02-18 */
-        $instant = Instant::fromString(value: '2026-02-18T00:30:00+00:00');
-
-        /** @When projecting into America/New_York (UTC-5 in February) */
-        $localDate = $instant->toLocalDate(zone: Timezone::from(identifier: 'America/New_York'));
-
-        /** @Then the local date is the previous day relative to UTC */
-        self::assertSame('2026-02-17', $localDate->toIso8601());
     }
 
     #[DataProvider('civilDateTimeDataProvider')]
@@ -1041,19 +1064,6 @@ final class LocalDateTest extends TestCase
         self::assertSame('2026-03-08T07:30:00+00:00', $insideTheGap->toIso8601());
     }
 
-    public function testAtTimeWhenCivilTimeFallsInTheFallBackOverlapThenItResolvesToTheEarlierOccurrence(): void
-    {
-        /** @Given the New York day when 01:30 happens twice, first on -04:00 and then on -05:00 */
-        $newYork = Timezone::from(identifier: 'America/New_York');
-
-        /** @When the ambiguous civil time is anchored in that zone */
-        $ambiguous = LocalDate::of(year: 2026, month: 11, day: 1)
-            ->atTime(time: TimeOfDay::from(hour: 1, minute: 30), zone: $newYork);
-
-        /** @Then it lands on the earlier of the two, the one still on the pre-transition offset */
-        self::assertSame('2026-11-01T05:30:00+00:00', $ambiguous->toIso8601());
-    }
-
     public function testAtTimeWhenTheInstantIsReadBackInTheSameZoneThenTheCivilDateSurvives(): void
     {
         /** @Given a civil date anchored at a time whose UTC day differs from the local one */
@@ -1066,6 +1076,31 @@ final class LocalDateTest extends TestCase
 
         /** @Then the civil date survives the round trip */
         self::assertSame($date->toIso8601(), $roundTripped->toIso8601());
+    }
+
+    public function testInstantToLocalDateWhenJustPastMidnightUtcInWestZoneThenPreviousDate(): void
+    {
+        /** @Given an Instant at 00:30 UTC on 2026-02-18 */
+        $instant = Instant::fromString(value: '2026-02-18T00:30:00+00:00');
+
+        /** @When projecting into America/New_York (UTC-5 in February) */
+        $localDate = $instant->toLocalDate(zone: Timezone::from(identifier: 'America/New_York'));
+
+        /** @Then the local date is the previous day relative to UTC */
+        self::assertSame('2026-02-17', $localDate->toIso8601());
+    }
+
+    public function testAtTimeWhenCivilTimeFallsInTheFallBackOverlapThenItResolvesToTheEarlierOccurrence(): void
+    {
+        /** @Given the New York day when 01:30 happens twice, first on -04:00 and then on -05:00 */
+        $newYork = Timezone::from(identifier: 'America/New_York');
+
+        /** @When the ambiguous civil time is anchored in that zone */
+        $ambiguous = LocalDate::of(year: 2026, month: 11, day: 1)
+            ->atTime(time: TimeOfDay::from(hour: 1, minute: 30), zone: $newYork);
+
+        /** @Then it lands on the earlier of the two, the one still on the pre-transition offset */
+        self::assertSame('2026-11-01T05:30:00+00:00', $ambiguous->toIso8601());
     }
 
     public static function civilDateTimeDataProvider(): array
@@ -1124,40 +1159,5 @@ final class LocalDateTest extends TestCase
             'Date with trailing whitespace'    => ['value' => '2026-05-23 '],
             'Date with leading whitespace'     => ['value' => ' 2026-05-23']
         ];
-    }
-
-    public function testEqualsWhenSameDateThenIsTrue(): void
-    {
-        /** @Given two LocalDates built separately from the same date */
-        $one = LocalDate::fromString(value: '2026-02-17');
-        $other = LocalDate::of(year: 2026, month: 2, day: 17);
-
-        /** @Then they are equal by value and share the hash code */
-        self::assertTrue($one->equals(other: $other));
-        self::assertSame($one->hashCode(), $other->hashCode());
-    }
-
-    public function testEqualsWhenDifferentDateThenIsFalse(): void
-    {
-        /** @Given two LocalDates one day apart */
-        $one = LocalDate::fromString(value: '2026-02-17');
-        $other = LocalDate::fromString(value: '2026-02-18');
-
-        /** @Then they are not equal and the hash codes differ */
-        self::assertFalse($one->equals(other: $other));
-        self::assertNotSame($one->hashCode(), $other->hashCode());
-    }
-
-    public function testComparisonWhenSameDateBuiltApartThenNeitherPrecedesTheOther(): void
-    {
-        /** @Given the same date reached by parsing and by shifting */
-        $one = LocalDate::fromString(value: '2026-02-17');
-        $other = LocalDate::fromString(value: '2026-02-16')->plusDays(days: 1);
-
-        /** @Then the ordering depends on the date alone, never on when each was built */
-        self::assertFalse($one->isAfter(other: $other));
-        self::assertFalse($one->isBefore(other: $other));
-        self::assertTrue($one->isAfterOrEqual(other: $other));
-        self::assertTrue($one->isBeforeOrEqual(other: $other));
     }
 }
