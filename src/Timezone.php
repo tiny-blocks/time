@@ -6,6 +6,7 @@ namespace TinyBlocks\Time;
 
 use DateTimeZone;
 use TinyBlocks\Time\Exceptions\InvalidTimezone;
+use TinyBlocks\Time\Internal\TimezoneDatabase;
 use TinyBlocks\Vo\ValueObject;
 use TinyBlocks\Vo\ValueObjectBehavior;
 
@@ -20,7 +21,7 @@ final readonly class Timezone implements ValueObject
 
     private function __construct(public string $value)
     {
-        if ($this->value === '' || !in_array($this->value, DateTimeZone::listIdentifiers(), true)) {
+        if ($this->value === '' || TimezoneDatabase::omits(identifier: $this->value)) {
             throw InvalidTimezone::becauseIdentifierIsInvalid(identifier: $this->value);
         }
     }
